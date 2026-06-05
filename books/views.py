@@ -1,7 +1,10 @@
 import requests
+from django.core.files.base import ContentFile
 from django.shortcuts import render
 from django.contrib.auth import authenticate
 from django.views.decorators.cache import never_cache
+from django.db.models import Value
+from django.db.models.functions import Coalesce, NullIf
 from rest_framework import viewsets, filters, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -64,13 +67,15 @@ class UserbookViewSet(viewsets.ModelViewSet):
     
     # Enable filtering by URL params like ?status=READ
     filterset_fields = ['status', 'tags']
-    search_fields = ['book__title', 'book__authors__name', 'tags__name']
+    search_fields = ['effective_title', 'effective_author', 'book__authors__name', 'tags__name']
+    ordering = ['-added_at']
 
     def get_queryset(self):
         """
-        OPTIMIZATION: The N+1 Query Fix.
-        Instead of just filtering, we instruct Django to fetch the related 'book' 
-        via SQL JOIN, and prefetch the 'authors' and 'tags' in bulk.
+        Annotates the queryset with effective_title and effective_author
+        so sorting and searching respect custom overrides.
+        Coalesce(NullIf(custom_field, ''), fallback) treats blank strings
+        as NULL so it correctly falls through to the Book-level data.
         """
         return Userbook.objects.filter(
             user=self.request.user
@@ -79,6 +84,15 @@ class UserbookViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             'book__authors', 
             'tags'
+        ).annotate(
+            effective_title=Coalesce(
+                NullIf('custom_title', Value('')),
+                'book__title'
+            ),
+            effective_author=Coalesce(
+                NullIf('custom_author', Value('')),
+                'book__authors__name'
+            ),
         ).distinct()
     
     def perform_create(self, serializer):
@@ -184,10 +198,7 @@ class AddBookView(APIView):
     def post(self, request):
         title = request.data.get('title')
         author_name = request.data.get('author')
-        # UPDATED: Just accept the full image URL directly from the frontend
         cover_image_url = request.data.get('cover_image', '')
-        
-        # We can extract these later if we add them to the JS payload, but they aren't strictly required
         publisher_name = request.data.get('publisher')
         isbn = request.data.get('isbn')
 
@@ -202,32 +213,43 @@ class AddBookView(APIView):
         if publisher_name:
             publisher, _ = Publisher.objects.get_or_create(name=publisher_name)
 
-        # 2. Check if the universal Book already exists (falling back to title/author if no ISBN)
+        # Check if the universal Book already exists
         book = None
         if isbn:
             book = Book.objects.filter(isbn=isbn).first()
         elif author:
             book = Book.objects.filter(title=title, authors=author).first()
 
-        # 3. If it doesn't exist, create it globally
+        # If it doesn't exist, create it globally
         if not book:
             book = Book.objects.create(
                 title=title,
                 publisher=publisher,
                 isbn=isbn or "",
-                cover_image=cover_image_url # Use the URL sent from JS
             )
             if author:
                 book.authors.add(author)
 
-        # 4. Finally, link the global Book to the specific User
+            # Download and cache the cover image locally
+            if cover_image_url and 'openlibrary.org' in cover_image_url:
+                try:
+                    img_response = requests.get(cover_image_url, timeout=8)
+                    if img_response.status_code == 200:
+                        # Generate a safe filename
+                        safe_title = title[:30].replace(' ', '_').replace('/', '-')
+                        filename = f"cover_{safe_title}.jpg"
+                        cover_file = ContentFile(img_response.content, name=filename)
+                        book.cover_image.save(filename, cover_file, save=True)
+                except requests.RequestException:
+                    pass  # Silently fall back to no cover
+
+        # Link the global Book to the specific User
         userbook, created = Userbook.objects.get_or_create(
             user=request.user,
             book=book,
-            defaults={'status': 'WANT'} # Default to "Want to Read"
+            defaults={'status': 'WANT'}
         )
 
-        # Prevent adding the exact same book twice to the user's library
         if not created:
             return Response({"detail": "This book is already in your library!"}, status=400)
 
@@ -236,7 +258,55 @@ class AddBookView(APIView):
             "book_id": book.id,
             "userbook_id": userbook.id
         }, status=201)
-    
+
+
+class ManualAddBookView(APIView):
+    """Handles manually adding a book with user-provided metadata."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        title = request.data.get('title', '').strip()
+        author_name = request.data.get('author', '').strip()
+        cover = request.FILES.get('cover')
+
+        if not title:
+            return Response({"error": "Title is required"}, status=400)
+
+        # Create a minimal placeholder Book
+        book = Book.objects.create(title=title)
+        if author_name:
+            author_obj, _ = Author.objects.get_or_create(name=author_name)
+            book.authors.add(author_obj)
+
+        # Create Userbook with custom overrides
+        userbook = Userbook.objects.create(
+            user=request.user, book=book, status='WANT',
+            custom_title=title, custom_author=author_name
+        )
+        if cover:
+            userbook.custom_cover.save(cover.name, cover, save=True)
+
+        return Response({
+            "message": "Book added manually",
+            "userbook_id": str(userbook.id)
+        }, status=201)
+
+
+class BulkDeleteView(APIView):
+    """Handles deleting multiple Userbook entries at once."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({"error": "No IDs provided"}, status=400)
+
+        deleted_count, _ = Userbook.objects.filter(
+            user=request.user, id__in=ids
+        ).delete()
+
+        return Response({"deleted": deleted_count})
+
 
 # ==========================================
 # 3. HTML Template Views (Frontend Routing)

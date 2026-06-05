@@ -38,54 +38,68 @@ async function apiFetch(url, options = {}) {
 
 // --- Initialization ---
 document.addEventListener("DOMContentLoaded", async () => {
-    // Safely grab the ID that we declared at the bottom of book_info.html
     if (typeof DJANGO_BOOK_ID !== 'undefined' && DJANGO_BOOK_ID !== "") {
         CURRENT_BOOK_ID = DJANGO_BOOK_ID;
     } else {
-        console.error("Could not find Book ID. Make sure DJANGO_BOOK_ID is in the HTML.");
+        console.error("Could not find Book ID.");
         return;
     }
 
     await fetchAndPopulateData();
 
-    // Setup the Add Tag listeners (Mouse Click + Enter Key)
+    // Tag listeners
     const addTagBtn = document.getElementById("add-tag-btn");
     const tagInput = document.getElementById("new-tag-input");
+    if (addTagBtn) addTagBtn.addEventListener("click", handleAddTag);
+    if (tagInput) tagInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); handleAddTag(); }
+    });
 
-    if (addTagBtn) {
-        addTagBtn.addEventListener("click", handleAddTag);
-    }
-
-    if (tagInput) {
-        tagInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault(); 
-                handleAddTag();
-            }
-        });
-    }
-
-    // Setup the form submission listener
+    // Form submission
     const updateForm = document.getElementById("book-update-form");
-    if (updateForm) {
-        updateForm.addEventListener("submit", handleFormSubmit);
-    }
+    if (updateForm) updateForm.addEventListener("submit", handleFormSubmit);
 
-    // Setup the delete button listener
+    // Delete button
     const deleteBtn = document.getElementById("delete-book-btn");
-    if (deleteBtn) {
-        deleteBtn.addEventListener("click", handleDeleteBook);
-    }
+    if (deleteBtn) deleteBtn.addEventListener("click", handleDeleteBook);
 
-    // Setup the ebook upload listeners
+    // Ebook upload
     const ebookUploadBtn = document.getElementById("ebook-upload-btn");
     const ebookFileInput = document.getElementById("ebook-file-input");
-
     if (ebookUploadBtn && ebookFileInput) {
         ebookUploadBtn.addEventListener("click", () => ebookFileInput.click());
         ebookFileInput.addEventListener("change", handleEbookUpload);
     }
+
+    // Edit details toggle
+    const editToggle = document.getElementById("edit-toggle-btn");
+    if (editToggle) editToggle.addEventListener("click", toggleEditDetails);
+
+    // Edit cover upload
+    const editCoverBtn = document.getElementById("edit-cover-btn");
+    const editCoverInput = document.getElementById("edit-cover-input");
+    if (editCoverBtn && editCoverInput) {
+        editCoverBtn.addEventListener("click", () => editCoverInput.click());
+        editCoverInput.addEventListener("change", () => {
+            const file = editCoverInput.files[0];
+            if (file) {
+                const preview = document.getElementById("edit-cover-preview");
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = "block";
+            }
+        });
+    }
+
+    // Save details button
+    const saveDetailsBtn = document.getElementById("save-details-btn");
+    if (saveDetailsBtn) saveDetailsBtn.addEventListener("click", handleSaveDetails);
 });
+
+// --- Edit Details Toggle ---
+function toggleEditDetails() {
+    const form = document.getElementById("edit-details-form");
+    form.classList.toggle("is-open");
+}
 
 // --- Data Fetching ---
 async function fetchAndPopulateData() {
@@ -95,16 +109,14 @@ async function fetchAndPopulateData() {
         
         const data = await response.json();
         
-        // 1. Populate Header info
+        // Populate Header info
         document.getElementById("detail-title").textContent = data.book_title;
         
         const authorEl = document.getElementById("detail-author");
         if (authorEl) {
             const authorName = data.author || "Unknown Author";
             authorEl.textContent = authorName;
-            
             if (data.author) {
-                // Point back to your local library root instead of the add-book page
                 authorEl.href = `/api/?author=${encodeURIComponent(authorName)}`;
             } else {
                 authorEl.style.pointerEvents = "none";
@@ -114,18 +126,24 @@ async function fetchAndPopulateData() {
         const coverUrl = data.cover_image || "/static/books/images/book-placeholder.png";
         document.getElementById("detail-cover").src = coverUrl;
 
-        // 2. Populate the Reading Journey form fields
+        // Populate edit form with current custom values
+        const editTitle = document.getElementById("edit-title");
+        const editAuthor = document.getElementById("edit-author");
+        if (editTitle) editTitle.value = data.custom_title || "";
+        if (editAuthor) editAuthor.value = data.custom_author || "";
+
+        // Populate the Reading Journey form fields
         if (data.status) document.getElementById("detail-status").value = data.status;
         if (data.rating) document.getElementById("detail-rating").value = data.rating;
         if (data.start_date) document.getElementById("detail-start-date").value = data.start_date;
         if (data.finish_date) document.getElementById("detail-finish-date").value = data.finish_date;
         if (data.notes) document.getElementById("detail-notes").value = data.notes;
 
-        // 3. Populate Tags array and render
+        // Populate Tags
         currentTags = data.tags ? data.tags.map(t => t.name) : [];
         renderTags();
 
-        // 4. Populate E-Book File
+        // Populate E-Book File
         const ebookContainer = document.getElementById("ebook-container");
         if (data.ebook_file && ebookContainer) {
             const fileName = data.ebook_file.split('/').pop(); 
@@ -191,28 +209,73 @@ async function syncTags() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ tag_names: currentTags })
         });
-        
-        if (!response.ok) {
-            console.error("Failed to sync tags to database");
+        if (!response.ok) console.error("Failed to sync tags");
+    } catch (error) {
+        console.error("Tag sync error:", error);
+    }
+}
+
+// --- Save Custom Details (Override Architecture) ---
+async function handleSaveDetails() {
+    const saveBtn = document.getElementById("save-details-btn");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
+    const formData = new FormData();
+    
+    const customTitle = document.getElementById("edit-title").value.trim();
+    const customAuthor = document.getElementById("edit-author").value.trim();
+    const coverFile = document.getElementById("edit-cover-input").files[0];
+
+    formData.append("custom_title", customTitle);
+    formData.append("custom_author", customAuthor);
+    if (coverFile) {
+        formData.append("custom_cover", coverFile);
+    }
+
+    try {
+        const token = localStorage.getItem("access");
+        const response = await fetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
+            method: "PATCH",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData
+        });
+
+        if (response.ok) {
+            saveBtn.textContent = "Saved ✓";
+            // Refresh the display with new data
+            await fetchAndPopulateData();
+            // Close the edit form
+            document.getElementById("edit-details-form").classList.remove("is-open");
+            
+            setTimeout(() => {
+                saveBtn.textContent = "Save Details";
+                saveBtn.disabled = false;
+            }, 1500);
+        } else {
+            throw new Error("Failed to save");
         }
     } catch (error) {
-        console.error("Tag sync network error:", error);
+        console.error("Save details error:", error);
+        saveBtn.textContent = "Error!";
+        setTimeout(() => {
+            saveBtn.textContent = "Save Details";
+            saveBtn.disabled = false;
+        }, 2000);
     }
 }
 
 // --- Form Submission Logic (with Save Redirect) ---
 async function handleFormSubmit(e) {
-    e.preventDefault(); // Prevent the page from refreshing
+    e.preventDefault();
     
     const submitBtn = document.getElementById("save-btn");
     const statusMsg = document.getElementById("status-message");
 
-    // UI Feedback: Show saving state
     submitBtn.disabled = true;
     submitBtn.textContent = "Saving...";
     statusMsg.style.display = "none";
 
-    // Gather the data from the form
     const payload = {
         status: document.getElementById("detail-status").value,
         rating: document.getElementById("detail-rating").value || null,
@@ -231,12 +294,9 @@ async function handleFormSubmit(e) {
         });
 
         if (response.ok) {
-            // Success — redirect back to dashboard after a brief flash
             redirecting = true;
             submitBtn.textContent = "Saved ✓";
-            setTimeout(() => {
-                window.location.href = "/api/";
-            }, 600);
+            setTimeout(() => { window.location.href = "/api/"; }, 600);
         } else {
             const errData = await response.json();
             throw new Error(errData.detail || "Failed to save changes");
@@ -250,10 +310,7 @@ async function handleFormSubmit(e) {
             statusMsg.style.display = "block";
             submitBtn.disabled = false;
             submitBtn.textContent = "Save Changes";
-            
-            setTimeout(() => {
-                statusMsg.style.display = "none";
-            }, 3000);
+            setTimeout(() => { statusMsg.style.display = "none"; }, 3000);
         }
     }
 }
@@ -273,7 +330,6 @@ async function handleEbookUpload() {
     formData.append("ebook_file", file);
 
     try {
-        // Use fetch directly instead of apiFetch — FormData must not have Content-Type set manually
         const token = localStorage.getItem("access");
         const response = await fetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
             method: "PATCH",
@@ -283,7 +339,6 @@ async function handleEbookUpload() {
 
         if (response.ok) {
             const data = await response.json();
-            // Re-render the ebook container with the new file
             const ebookContainer = document.getElementById("ebook-container");
             if (data.ebook_file && ebookContainer) {
                 const fileName = data.ebook_file.split('/').pop();
@@ -303,32 +358,26 @@ async function handleEbookUpload() {
     } finally {
         uploadBtn.innerHTML = originalHtml;
         uploadBtn.disabled = false;
-        fileInput.value = ""; // Reset the file input
+        fileInput.value = "";
     }
 }
 
 // --- Book Deletion Logic ---
 async function handleDeleteBook() {
     const confirmDeletion = confirm("Are you absolutely sure you want to remove this book from your library? This action cannot be undone.");
-    
-    if (!confirmDeletion) {
-        return; // User canceled the warning action, exit safely
-    }
+    if (!confirmDeletion) return;
 
     const deleteBtn = document.getElementById("delete-book-btn");
     deleteBtn.disabled = true;
     deleteBtn.textContent = "Removing...";
 
     try {
-        const response = await apiFetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
-            method: "DELETE"
-        });
+        const response = await apiFetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, { method: "DELETE" });
 
         if (response.status === 204 || response.ok) {
-            // Successfully unlinked. Route them right back to their custom main dashboard collection root
             window.location.replace("/api/");
         } else {
-            throw new Error("Deletion failed on server side processing.");
+            throw new Error("Deletion failed");
         }
     } catch (error) {
         console.error("Delete Error:", error);

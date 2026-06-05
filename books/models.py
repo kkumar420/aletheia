@@ -71,8 +71,8 @@ class Book(models.Model):
     language = models.CharField(max_length=50, blank=True)
     isbn = models.CharField(max_length=20, blank=True)
     
-    # We store the image URL from OpenLibrary rather than hosting the file locally
-    cover_image = models.URLField(blank=True)
+    # Cover images are downloaded and stored locally
+    cover_image = models.ImageField(upload_to="covers/", blank=True)
 
     def __str__(self):
         return self.title
@@ -128,6 +128,11 @@ class Userbook(models.Model):
     
     # Users can attach their personal tags to this specific book mapping
     tags = models.ManyToManyField(Tag, blank=True)
+
+    # --- User Overrides (per-user customizations that don't affect the global Book) ---
+    custom_title = models.CharField(max_length=255, blank=True)
+    custom_author = models.CharField(max_length=255, blank=True)
+    custom_cover = models.ImageField(upload_to="covers/custom/", null=True, blank=True)
 
     class Meta:
         # A user can only have a specific book in their library once

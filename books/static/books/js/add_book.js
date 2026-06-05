@@ -1,7 +1,8 @@
-// --- Global Pagination State ---
+// --- Global State ---
 let currentSearchParams = "";
 let currentPage = 1;
 let isAdvancedMode = false;
+let isManualMode = false;
 const resultsLimit = 6;
 
 // --- API Interceptor ---
@@ -38,6 +39,57 @@ document.addEventListener("DOMContentLoaded", () => {
     const advancedToggle = document.getElementById("advanced-toggle");
     const advancedPanel = document.getElementById("advanced-panel");
     
+    // Mode switching
+    const modeSearchBtn = document.getElementById("mode-search-btn");
+    const modeManualBtn = document.getElementById("mode-manual-btn");
+    const searchContent = document.getElementById("search-mode-content");
+    const manualContent = document.getElementById("manual-mode-content");
+
+    if (modeSearchBtn && modeManualBtn) {
+        modeSearchBtn.addEventListener("click", () => {
+            isManualMode = false;
+            modeSearchBtn.classList.add("is-active");
+            modeManualBtn.classList.remove("is-active");
+            searchContent.style.display = "";
+            manualContent.style.display = "none";
+            document.getElementById("results-container").style.display = "";
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("load-more-container").style.display = "none";
+        });
+
+        modeManualBtn.addEventListener("click", () => {
+            isManualMode = true;
+            modeManualBtn.classList.add("is-active");
+            modeSearchBtn.classList.remove("is-active");
+            searchContent.style.display = "none";
+            manualContent.style.display = "";
+            document.getElementById("results-container").style.display = "none";
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("load-more-container").style.display = "none";
+        });
+    }
+
+    // Manual cover upload preview
+    const manualCoverBtn = document.getElementById("manual-cover-btn");
+    const manualCoverInput = document.getElementById("manual-cover-input");
+    if (manualCoverBtn && manualCoverInput) {
+        manualCoverBtn.addEventListener("click", () => manualCoverInput.click());
+        manualCoverInput.addEventListener("change", () => {
+            const file = manualCoverInput.files[0];
+            if (file) {
+                const preview = document.getElementById("manual-cover-preview");
+                preview.src = URL.createObjectURL(file);
+                preview.classList.add("has-image");
+            }
+        });
+    }
+
+    // Manual form submission
+    const manualForm = document.getElementById("manual-form");
+    if (manualForm) {
+        manualForm.addEventListener("submit", handleManualAdd);
+    }
+
     // Advanced search toggle
     if (advancedToggle && advancedPanel) {
         advancedToggle.addEventListener("click", () => {
@@ -55,6 +107,20 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Search clear button
+    const searchClearBtn = document.getElementById("search-clear-btn");
+    if (searchClearBtn && searchInput) {
+        searchInput.addEventListener("input", () => {
+            searchClearBtn.classList.toggle("is-visible", searchInput.value.length > 0);
+        });
+        searchClearBtn.addEventListener("click", () => {
+            searchInput.value = "";
+            searchClearBtn.classList.remove("is-visible");
+            document.getElementById("results-container").innerHTML = "";
+            document.getElementById("load-more-container").style.display = "none";
+        });
+    }
+
     if (searchForm) {
         searchForm.addEventListener("submit", (e) => {
             e.preventDefault();
@@ -63,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (isAdvancedMode) {
                 const params = buildAdvancedParams();
-                if (!params) return; // Nothing to search
+                if (!params) return;
                 currentSearchParams = params;
             } else {
                 const query = searchInput.value.trim();
@@ -82,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Capture explicit author query links arriving from details parameters window
+    // Capture author query from URL params
     const urlParams = new URLSearchParams(window.location.search);
     const authorParam = urlParams.get('author');
     if (authorParam && searchInput) {
@@ -92,6 +158,53 @@ document.addEventListener("DOMContentLoaded", () => {
         performSearch(currentSearchParams, currentPage);
     }
 });
+
+// --- Manual Add Handler ---
+async function handleManualAdd(e) {
+    e.preventDefault();
+
+    const title = document.getElementById("manual-title").value.trim();
+    const author = document.getElementById("manual-author").value.trim();
+    const coverFile = document.getElementById("manual-cover-input").files[0];
+
+    if (!title) return;
+
+    const submitBtn = document.getElementById("manual-submit-btn");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Adding...";
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("author", author);
+    if (coverFile) formData.append("cover", coverFile);
+
+    try {
+        const token = localStorage.getItem("access");
+        const response = await fetch("/api/manual-add-book/", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            submitBtn.textContent = "Added ✓";
+            setTimeout(() => {
+                window.location.href = `/api/book/${data.userbook_id}/`;
+            }, 400);
+        } else {
+            throw new Error(data.error || "Failed to add book");
+        }
+    } catch (error) {
+        console.error("Manual add error:", error);
+        submitBtn.textContent = "Error!";
+        setTimeout(() => {
+            submitBtn.textContent = "Add to Library";
+            submitBtn.disabled = false;
+        }, 2000);
+    }
+}
 
 // --- Build Advanced Search Params ---
 function buildAdvancedParams() {
@@ -120,7 +233,6 @@ async function performSearch(searchParams, page) {
     const loadMoreContainer = document.getElementById("load-more-container");
     const loadMoreBtn = document.getElementById("load-more-btn");
     
-    // UI Loading Configurations
     spinner.style.display = "block";
     searchBtn.disabled = true;
     if (page > 1) {
@@ -132,18 +244,13 @@ async function performSearch(searchParams, page) {
 
     try {
         const response = await apiFetch(`/api/search-openlibrary/?${searchParams}&page=${page}`);
-        
         if (!response.ok) throw new Error("Search proxy returned error status.");
-        
         const data = await response.json();
         renderResults(data, page);
-        
     } catch (error) {
         console.error("Search error:", error);
         if (page === 1) {
-            container.innerHTML = `<p class="text-secondary" style="grid-column: 1 / -1; text-align: center; color: var(--danger);">Connection lost. OpenLibrary may be transiently busy. Please try again.</p>`;
-        } else {
-            alert("Could not load additional results at this moment.");
+            container.innerHTML = `<p class="text-secondary" style="grid-column: 1 / -1; text-align: center; color: var(--danger);">Connection lost. Please try again.</p>`;
         }
     } finally {
         spinner.style.display = "none";
@@ -162,10 +269,9 @@ function renderResults(results, page) {
     
     if (!results || results.length === 0) {
         if (page === 1) {
-            container.innerHTML = `<p class="text-secondary" style="grid-column: 1 / -1; text-align: center;">No matching entries found inside public archives.</p>`;
+            container.innerHTML = `<p class="text-secondary" style="grid-column: 1 / -1; text-align: center;">No matching entries found.</p>`;
         } else {
             loadMoreContainer.style.display = "none";
-            alert("You have reached the end of all available library records.");
         }
         return;
     }
@@ -182,7 +288,8 @@ function renderResults(results, page) {
             title: title,
             author: author,
             cover_image: coverImage,
-            openlibrary_key: book.key
+            isbn: book.isbn || "",
+            publisher: book.publisher || ""
         }));
 
         return `
@@ -212,7 +319,6 @@ function renderResults(results, page) {
         loadMoreContainer.style.display = "none";
     }
 
-    // Rebind newly introduced transaction click parameters anchors safely
     container.querySelectorAll(".add-to-lib-btn").forEach(btn => {
         btn.replaceWith(btn.cloneNode(true));
     });
@@ -222,15 +328,14 @@ function renderResults(results, page) {
     });
 }
 
-// --- Add to Library Logic & Instant Redirect ---
+// --- Add to Library Logic ---
 async function handleAddBook(e) {
     const button = e.target;
     const bookData = JSON.parse(decodeURIComponent(button.getAttribute("data-book")));
 
-    // Visual feedback
     button.textContent = "Adding...";
     button.disabled = true;
-    const historicalBackgroundStyle = button.style.background;
+    const historicalBg = button.style.background;
     button.style.background = "#64748b";
 
     try {
@@ -245,32 +350,27 @@ async function handleAddBook(e) {
         if (response.ok) {
             button.textContent = "Added ✓";
             button.style.background = "#10b981";
-            
-            // Seamless Redirect: Use the userbook_id returned by Django to route instantly
             setTimeout(() => {
                 window.location.href = `/api/book/${data.userbook_id}/`;
             }, 400);
-            
         } else {
             if (data.detail && data.detail.includes("already")) {
                 throw new Error("ALREADY_EXISTS");
             }
-            throw new Error(data.detail || "Failed to append record target.");
+            throw new Error(data.detail || "Failed to add.");
         }
     } catch (error) {
-        console.error("Collection addition error event tracking:", error);
-        
+        console.error("Add error:", error);
         if (error.message === "ALREADY_EXISTS") {
             button.textContent = "In Library";
             button.style.background = "#3b82f6";
         } else {
             button.textContent = "Error!";
             button.style.background = "var(--danger)";
-            
             setTimeout(() => {
                 button.textContent = "Add to Library";
                 button.disabled = false;
-                button.style.background = historicalBackgroundStyle;
+                button.style.background = historicalBg;
             }, 2500);
         }
     }

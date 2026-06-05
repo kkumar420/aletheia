@@ -1,11 +1,12 @@
 // --- Global Filter/Sorting States ---
-let allBooksData = [];        // Cache master copy of personal records
-let selectedStatus = "ALL";   // Track active tab category link
-let selectedTags = new Set(); // Track multiple active tag filters simultaneously
+let allBooksData = [];
+let selectedStatus = "ALL";
+let selectedTags = new Set();
 let currentView = "grid";
 let searchQuery = "";
 let sortProperty = "date_added";
 let sortDirection = "desc";
+let selectedBookIds = new Set(); // Bulk selection tracking
 
 // --- API Fetch Wrapper ---
 async function apiFetch(url, options = {}) {
@@ -64,6 +65,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupFiltersAndSortSuite();
     setupSortPopover();
     setupClearTags();
+    setupBulkActions();
+    setupTagManager();
+    setupSearchClear();
+    setupEscapeKey();
     await loadLibraryData();
 
     // Check query redirects
@@ -110,7 +115,7 @@ function generateTagShelves() {
     }
 
     container.innerHTML = Array.from(uniqueTags).sort().map(tag => `
-        <button type="button" class="shelf-toggle" data-tag="${tag}">
+        <button type="button" class="shelf-toggle${selectedTags.has(tag) ? ' active' : ''}" data-tag="${tag}">
             #${tag}
         </button>
     `).join("");
@@ -139,20 +144,17 @@ function setupSortPopover() {
     const popover = document.getElementById("sort-popover");
     if (!trigger || !popover) return;
 
-    // Toggle popover open/close
     trigger.addEventListener("click", (e) => {
         e.stopPropagation();
         popover.classList.toggle("is-open");
     });
 
-    // Close on outside click
     document.addEventListener("click", (e) => {
         if (!popover.contains(e.target) && !trigger.contains(e.target)) {
             popover.classList.remove("is-open");
         }
     });
 
-    // Sort property options
     popover.querySelectorAll(".sort-popover__option").forEach(opt => {
         opt.addEventListener("click", () => {
             popover.querySelectorAll(".sort-popover__option").forEach(o => o.classList.remove("is-active"));
@@ -162,7 +164,6 @@ function setupSortPopover() {
         });
     });
 
-    // Direction toggles
     popover.querySelectorAll(".sort-popover__dir").forEach(btn => {
         btn.addEventListener("click", () => {
             popover.querySelectorAll(".sort-popover__dir").forEach(b => b.classList.remove("is-active"));
@@ -193,6 +194,236 @@ function updateClearTagsVisibility() {
     }
 }
 
+// ==========================================
+// BULK ACTIONS
+// ==========================================
+
+function setupBulkActions() {
+    const deleteBtn = document.getElementById("bulk-delete-btn");
+    const cancelBtn = document.getElementById("bulk-cancel-btn");
+
+    if (deleteBtn) deleteBtn.addEventListener("click", handleBulkDelete);
+    if (cancelBtn) cancelBtn.addEventListener("click", clearBulkSelection);
+}
+
+function toggleBulkSelection(bookId, checkbox, card) {
+    if (checkbox.checked) {
+        selectedBookIds.add(bookId);
+        card.classList.add("is-selected");
+    } else {
+        selectedBookIds.delete(bookId);
+        card.classList.remove("is-selected");
+    }
+    updateBulkBar();
+}
+
+function updateBulkBar() {
+    const bar = document.getElementById("bulk-action-bar");
+    const countEl = document.getElementById("bulk-count");
+    const count = selectedBookIds.size;
+
+    if (count > 0) {
+        bar.classList.add("is-visible");
+        countEl.textContent = `${count} selected`;
+    } else {
+        bar.classList.remove("is-visible");
+    }
+}
+
+function clearBulkSelection() {
+    selectedBookIds.clear();
+    document.querySelectorAll(".book-card__check, .book-row__check").forEach(cb => {
+        cb.checked = false;
+    });
+    document.querySelectorAll(".is-selected").forEach(el => {
+        el.classList.remove("is-selected");
+    });
+    updateBulkBar();
+}
+
+async function handleBulkDelete() {
+    const count = selectedBookIds.size;
+    if (count === 0) return;
+
+    const confirmed = confirm(`Are you sure you want to delete ${count} book${count > 1 ? 's' : ''} from your library? This cannot be undone.`);
+    if (!confirmed) return;
+
+    const deleteBtn = document.getElementById("bulk-delete-btn");
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Deleting...";
+
+    try {
+        const response = await apiFetch("/api/userbooks/bulk-delete/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: Array.from(selectedBookIds) })
+        });
+
+        if (response.ok) {
+            // Remove deleted books from local cache
+            allBooksData = allBooksData.filter(b => !selectedBookIds.has(String(b.id)));
+            clearBulkSelection();
+            generateTagShelves();
+            applyFiltersAndSorts();
+        } else {
+            throw new Error("Bulk delete failed");
+        }
+    } catch (error) {
+        console.error("Bulk delete error:", error);
+        alert("Failed to delete selected books. Please try again.");
+    } finally {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 0 1 1.34-1.34h2.66a1.33 1.33 0 0 1 1.34 1.34V4M13.33 4l-.67 9.33a1.33 1.33 0 0 1-1.33 1.34H4.67a1.33 1.33 0 0 1-1.33-1.34L2.67 4"/></svg> Delete Selected`;
+    }
+}
+
+// ==========================================
+// TAG MANAGER MODAL
+// ==========================================
+
+function setupTagManager() {
+    const manageBtn = document.getElementById("manage-tags-btn");
+    const closeBtn = document.getElementById("close-tag-modal");
+    const modal = document.getElementById("tag-manager-modal");
+
+    if (manageBtn) manageBtn.addEventListener("click", openTagManager);
+    if (closeBtn) closeBtn.addEventListener("click", closeTagManager);
+    
+    // Close on backdrop click
+    if (modal) {
+        modal.addEventListener("click", (e) => {
+            if (e.target === modal) closeTagManager();
+        });
+    }
+}
+
+async function openTagManager() {
+    const modal = document.getElementById("tag-manager-modal");
+    const listContainer = document.getElementById("tag-manager-list");
+    modal.classList.add("is-open");
+
+    // Fetch all tags from the API (gives us IDs needed for deletion)
+    try {
+        const response = await apiFetch("/api/tags/");
+        if (!response.ok) throw new Error("Failed to fetch tags");
+        const tags = await response.json();
+
+        if (tags.length === 0) {
+            listContainer.innerHTML = `<p class="text-secondary text-sm" style="padding: 1rem 0;">No tags in your library yet.</p>`;
+            return;
+        }
+
+        // Count how many books use each tag
+        const tagCounts = {};
+        allBooksData.forEach(book => {
+            if (book.tags) {
+                book.tags.forEach(t => {
+                    tagCounts[t.name] = (tagCounts[t.name] || 0) + 1;
+                });
+            }
+        });
+
+        listContainer.innerHTML = tags.map(tag => `
+            <div class="tag-manager-row" data-tag-id="${tag.id}">
+                <div class="tag-manager-row__info">
+                    <span class="tag-manager-row__name">#${tag.name}</span>
+                    <span class="tag-manager-row__count">${tagCounts[tag.name] || 0} books</span>
+                </div>
+                <button type="button" class="tag-manager-row__delete" data-tag-id="${tag.id}" data-tag-name="${tag.name}" title="Delete tag">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 0 1 1.34-1.34h2.66a1.33 1.33 0 0 1 1.34 1.34V4M13.33 4l-.67 9.33a1.33 1.33 0 0 1-1.33 1.34H4.67a1.33 1.33 0 0 1-1.33-1.34L2.67 4"/></svg>
+                </button>
+            </div>
+        `).join("");
+
+        listContainer.querySelectorAll(".tag-manager-row__delete").forEach(btn => {
+            btn.addEventListener("click", () => handleDeleteTag(btn.dataset.tagId, btn.dataset.tagName));
+        });
+    } catch (error) {
+        console.error("Tag manager error:", error);
+        listContainer.innerHTML = `<p class="text-secondary text-sm">Failed to load tags.</p>`;
+    }
+}
+
+function closeTagManager() {
+    document.getElementById("tag-manager-modal").classList.remove("is-open");
+}
+
+async function handleDeleteTag(tagId, tagName) {
+    const confirmed = confirm(`Delete the tag "#${tagName}" from all books in your library?`);
+    if (!confirmed) return;
+
+    try {
+        const response = await apiFetch(`/api/tags/${tagId}/`, { method: "DELETE" });
+
+        if (response.ok || response.status === 204) {
+            // Remove from local data
+            allBooksData.forEach(book => {
+                if (book.tags) {
+                    book.tags = book.tags.filter(t => t.name !== tagName);
+                }
+            });
+
+            // Remove from selected filters
+            selectedTags.delete(tagName);
+            updateClearTagsVisibility();
+
+            // Remove the row from the modal
+            const row = document.querySelector(`.tag-manager-row[data-tag-id="${tagId}"]`);
+            if (row) row.remove();
+
+            // Refresh the sidebar and book display
+            generateTagShelves();
+            applyFiltersAndSorts();
+        } else {
+            throw new Error("Delete failed");
+        }
+    } catch (error) {
+        console.error("Tag delete error:", error);
+        alert("Failed to delete tag. Please try again.");
+    }
+}
+
+// --- Search Clear Button ---
+function setupSearchClear() {
+    const clearBtn = document.getElementById("search-clear-btn");
+    const searchInput = document.getElementById("search-input");
+    if (!clearBtn || !searchInput) return;
+
+    // Show/hide the X based on input content
+    searchInput.addEventListener("input", () => {
+        clearBtn.classList.toggle("is-visible", searchInput.value.length > 0);
+    });
+
+    clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        searchQuery = "";
+        clearBtn.classList.remove("is-visible");
+        applyFiltersAndSorts();
+    });
+}
+
+// --- Escape Key Handler ---
+function setupEscapeKey() {
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            // Precedence 1: Clear multi-select if active
+            if (selectedBookIds.size > 0) {
+                clearBulkSelection();
+                return;
+            }
+            // Precedence 2: Clear the search bar and reset view
+            const searchInput = document.getElementById("search-input");
+            const clearBtn = document.getElementById("search-clear-btn");
+            if (searchInput && searchInput.value) {
+                searchInput.value = "";
+                searchQuery = "";
+                if (clearBtn) clearBtn.classList.remove("is-visible");
+                applyFiltersAndSorts();
+            }
+        }
+    });
+}
+
 // --- Event Listeners ---
 function setupFiltersAndSortSuite() {
     document.getElementById("search-input").addEventListener("input", (e) => {
@@ -217,9 +448,11 @@ function applyFiltersAndSorts() {
     let processedBooks = allBooksData.filter(book => {
         const matchesStatus = (selectedStatus === "ALL" || book.status === selectedStatus);
         
+        const bookTitle = book.title || "";
+        const bookAuthor = book.author || "";
         const matchesSearch = (searchQuery === "" || 
-            (book.title && book.title.toLowerCase().includes(searchQuery)) || 
-            (book.author && book.author.toLowerCase().includes(searchQuery))
+            bookTitle.toLowerCase().includes(searchQuery) || 
+            bookAuthor.toLowerCase().includes(searchQuery)
         );
         
         let matchesTags = true;
@@ -240,7 +473,6 @@ function applyFiltersAndSorts() {
         return matchesStatus && matchesSearch && matchesTags;
     });
 
-    // Read sort state from internal variables (not DOM)
     const property = sortProperty;
     const direction = sortDirection;
 
@@ -266,8 +498,8 @@ function applyFiltersAndSorts() {
                 break;
             case "date_added":
             default:
-                valA = a.id;
-                valB = b.id;
+                valA = a.added_at ? new Date(a.added_at) : new Date(0);
+                valB = b.added_at ? new Date(b.added_at) : new Date(0);
                 break;
         }
 
@@ -305,12 +537,18 @@ function renderBooks(books) {
 
     books.forEach(book => {
         const card = document.createElement("div");
-        card.className = currentView === "grid" ? "book-card" : "book-row";
+        const bookId = String(book.id);
+        const isSelected = selectedBookIds.has(bookId);
+
+        card.className = currentView === "grid" 
+            ? `book-card${isSelected ? ' is-selected' : ''}` 
+            : `book-row${isSelected ? ' is-selected' : ''}`;
         
         card.addEventListener("click", (e) => {
-            if (!e.target.classList.contains("author-link")) {
-                window.location.href = `/api/book/${book.id}/`;
-            }
+            if (e.target.classList.contains("author-link") || 
+                e.target.classList.contains("book-card__check") || 
+                e.target.classList.contains("book-row__check")) return;
+            window.location.href = `/api/book/${book.id}/`;
         });
 
         const coverImage = book.cover_image || "/static/books/images/book-placeholder.png";
@@ -320,6 +558,7 @@ function renderBooks(books) {
 
         if (currentView === "grid") {
             card.innerHTML = `
+                <input type="checkbox" class="book-card__check" data-id="${bookId}" ${isSelected ? 'checked' : ''}>
                 <img src="${coverImage}" class="book-cover" alt="Cover">
                 <div class="book-info">
                     <div class="book-title">${book.title}</div>
@@ -331,6 +570,7 @@ function renderBooks(books) {
                 </div>`;
         } else {
             card.innerHTML = `
+                <input type="checkbox" class="book-row__check" data-id="${bookId}" ${isSelected ? 'checked' : ''}>
                 <img src="${coverImage}" class="list-cover" alt="Cover">
                 <div class="list-title">${book.title}</div>
                 <div class="list-author">
@@ -342,11 +582,21 @@ function renderBooks(books) {
         container.appendChild(card);
     });
 
+    // Bind checkboxes
+    container.querySelectorAll(".book-card__check, .book-row__check").forEach(checkbox => {
+        checkbox.addEventListener("change", (e) => {
+            e.stopPropagation();
+            const card = e.target.closest(".book-card, .book-row");
+            toggleBulkSelection(e.target.dataset.id, e.target, card);
+        });
+        checkbox.addEventListener("click", (e) => e.stopPropagation());
+    });
+
+    // Bind author links
     container.querySelectorAll(".author-link").forEach(link => {
         link.addEventListener("click", (e) => {
             const authorName = e.target.textContent.trim();
             const searchInput = document.getElementById("search-input");
-            
             if (searchInput) {
                 searchInput.value = authorName; 
                 searchQuery = authorName.toLowerCase();

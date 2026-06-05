@@ -34,14 +34,14 @@ class TagSerializer(serializers.ModelSerializer):
         ]
 
 class UserbookSerializer(serializers.ModelSerializer):
-    book_title = serializers.CharField(source='book.title', read_only=True)
+    book_title = serializers.SerializerMethodField()
     author = serializers.SerializerMethodField()
+    cover_image = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
-    cover_image = serializers.CharField(source='book.cover_image', read_only=True)
     
-    # ---> NEW: A temporary portal just for receiving data from the frontend
+    # A temporary portal just for receiving data from the frontend
     tag_names = serializers.ListField(
-        child=serializers.CharField(max_length=100), # <-- Add parentheses here!
+        child=serializers.CharField(max_length=100),
         write_only=True,
         required=False
     )
@@ -50,16 +50,33 @@ class UserbookSerializer(serializers.ModelSerializer):
         model = Userbook
         fields = [
             'id', 'book', 'book_title', 'author', 'cover_image', 
-            'status', 'rating', 'tags', 'tag_names', # Add tag_names here
+            'status', 'rating', 'tags', 'tag_names',
             'ebook_file', 'added_at', 'start_date', 'finish_date', 'notes',
+            'custom_title', 'custom_author', 'custom_cover',
         ]
         read_only_fields = ['user']
     
+    def get_book_title(self, obj):
+        return obj.custom_title or obj.book.title
+
     def get_author(self, obj):
+        if obj.custom_author:
+            return obj.custom_author
         author = obj.book.authors.first()
         return author.name if author else ""
 
-    # ---> NEW: Override the save behavior to intercept the tags
+    def get_cover_image(self, obj):
+        request = self.context.get('request')
+        if obj.custom_cover:
+            return request.build_absolute_uri(obj.custom_cover.url) if request else obj.custom_cover.url
+        if obj.book.cover_image:
+            cover_str = str(obj.book.cover_image)
+            if cover_str.startswith('http'):
+                return cover_str
+            return request.build_absolute_uri(obj.book.cover_image.url) if request else obj.book.cover_image.url
+        return ""
+
+    # Override the save behavior to intercept the tags
     def update(self, instance, validated_data):
         # 1. Pop the tags out of the data dictionary before Django tries to save them
         tag_names = validated_data.pop('tag_names', None)
@@ -86,19 +103,10 @@ class UserbookSerializer(serializers.ModelSerializer):
         return instance
     
 class UserBookDashboardSerializer(serializers.ModelSerializer):
-    title = serializers.CharField(
-        source='book.title',
-        read_only=True
-    )
-
-    cover_image = serializers.CharField(
-        source='book.cover_image',
-        read_only=True
-    )
-
-    tags = TagSerializer(many=True, read_only=True)
-
+    title = serializers.SerializerMethodField()
+    cover_image = serializers.SerializerMethodField()
     author = serializers.SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Userbook
@@ -110,13 +118,30 @@ class UserBookDashboardSerializer(serializers.ModelSerializer):
             'status',
             'rating',
             'tags',
+            'added_at',
             'start_date',
             'finish_date',
         ]
 
+    def get_title(self, obj):
+        return obj.custom_title or obj.book.title
+
     def get_author(self, obj):
+        if obj.custom_author:
+            return obj.custom_author
         author = obj.book.authors.first()
         return author.name if author else ""
+
+    def get_cover_image(self, obj):
+        request = self.context.get('request')
+        if obj.custom_cover:
+            return request.build_absolute_uri(obj.custom_cover.url) if request else obj.custom_cover.url
+        if obj.book.cover_image:
+            cover_str = str(obj.book.cover_image)
+            if cover_str.startswith('http'):
+                return cover_str
+            return request.build_absolute_uri(obj.book.cover_image.url) if request else obj.book.cover_image.url
+        return ""
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
