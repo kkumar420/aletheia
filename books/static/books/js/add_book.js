@@ -107,17 +107,35 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Search clear button
+    // Search clear button & Escape key listener
     const searchClearBtn = document.getElementById("search-clear-btn");
     if (searchClearBtn && searchInput) {
+        
+        // 1. Show/hide 'X' button on type
         searchInput.addEventListener("input", () => {
             searchClearBtn.classList.toggle("is-visible", searchInput.value.length > 0);
         });
-        searchClearBtn.addEventListener("click", () => {
-            searchInput.value = "";
-            searchClearBtn.classList.remove("is-visible");
-            document.getElementById("results-container").innerHTML = "";
-            document.getElementById("load-more-container").style.display = "none";
+
+        // 2. The clear function (reusable)
+        const clearSearch = () => {
+            if (searchInput.value.length > 0 || document.getElementById("results-container").innerHTML !== "") {
+                searchInput.value = "";
+                searchClearBtn.classList.remove("is-visible");
+                document.getElementById("results-container").innerHTML = "";
+                document.getElementById("load-more-container").style.display = "none";
+                searchInput.blur(); // Un-focus the search bar
+            }
+        };
+
+        // 3. Click listener for the 'X' button
+        searchClearBtn.addEventListener("click", clearSearch);
+
+        // 4. Escape key listener
+        document.addEventListener("keydown", (e) => {
+            // Check if the key pressed is Escape, and that we are currently in "Search Online" mode
+            if (e.key === "Escape" && !isManualMode) {
+                clearSearch();
+            }
         });
     }
 
