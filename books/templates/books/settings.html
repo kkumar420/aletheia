@@ -1,0 +1,82 @@
+{% extends "books/base.html" %}
+{% load static %}
+
+{% block title %}
+Settings | Aletheia
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    
+    <div class="page-header">
+        <a href="/api/" class="back-link">← Back to Library</a>
+    </div>
+
+    <h1>Account &amp; Settings</h1>
+
+    <!-- ── Reading Metrics ── -->
+    <div class="settings-card">
+        <div class="settings-card__header">
+            <div class="settings-card__icon settings-card__icon--metrics">📊</div>
+            <div>
+                <h2>Reading Overview</h2>
+                <p class="text-sm text-secondary">Your library at a glance.</p>
+            </div>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="stat-total">0</div>
+                <div class="stat-label">Total Books</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-read">0</div>
+                <div class="stat-label">Finished</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-reading">0</div>
+                <div class="stat-label">Currently Reading</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Preferences ── -->
+    <div class="settings-card">
+        <div class="settings-card__header">
+            <div class="settings-card__icon settings-card__icon--prefs">🎨</div>
+            <div>
+                <h2>Preferences</h2>
+                <p class="text-sm text-secondary">Customize your reading environment.</p>
+            </div>
+        </div>
+        
+        <div class="theme-toggle-row">
+            <div class="theme-toggle-row__info">
+                <h3>Appearance</h3>
+                <p class="text-sm text-secondary">Switch between dark and light mode.</p>
+            </div>
+            <label class="theme-switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- ── Danger Zone ── -->
+    <div class="settings-card settings-card--danger">
+        <div class="settings-card__header">
+            <div class="settings-card__icon settings-card__icon--danger">⚠️</div>
+            <div>
+                <h2>Danger Zone</h2>
+                <p class="text-sm text-secondary">Irreversible account actions.</p>
+            </div>
+        </div>
+        <p class="text-secondary mb-md">Log out of your current session on this device.</p>
+        <button id="logout-btn" class="btn btn-danger">Log Out</button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'books/js/settings.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,994 @@
+/* ============================================================
+   ALETHEIA — Design System
+   Architecture: Tokens → Reset → Scrollbar → Utilities →
+   Components → Auth → Dashboard → Grid → List → Sidebar →
+   Detail → Settings → Light Theme → Responsive
+   ============================================================ */
+
+
+/* ==========================================================
+   §1  DESIGN TOKENS
+   ========================================================== */
+
+:root {
+    /* ---- Palette ---- */
+    --bg:               #0b0d12;
+    --bg-secondary:     #11151d;
+    --surface:          rgba(24, 28, 36, 0.75);
+    --surface-hover:    #1e2430;
+    --text-primary:     #f4f4f5;
+    --text-secondary:   #9ca3af;
+    --border:           rgba(255, 255, 255, 0.08);
+    --border-highlight: rgba(255, 255, 255, 0.15);
+    --accent:           #c38b59;
+    --accent-hover:     #d59d6a;
+    --danger:           #ef4444;
+
+    /* ---- Elevation ---- */
+    --shadow:           0 20px 40px rgba(0, 0, 0, 0.5),
+                        0 1px  3px  rgba(0, 0, 0, 0.2);
+    --shadow-card:      0 10px 20px rgba(0, 0, 0, 0.2);
+    --shadow-card-hover:0 20px 40px rgba(0, 0, 0, 0.4),
+                        0 0    20px rgba(195, 139, 89, 0.1);
+
+    /* ---- Shape ---- */
+    --radius:           20px;
+    --radius-md:        16px;
+    --radius-sm:        12px;
+    --radius-xs:        10px;
+    --radius-pill:      100px;
+
+    /* ---- Motion ---- */
+    --ease-out:         cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-smooth:      cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ---- Layout ---- */
+    --sidebar-w:        260px;
+}
+
+
+/* ==========================================================
+   §2  RESET & BASE
+   ========================================================== */
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at top, #1a2030 0%, #0b0d12 45%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+.app-container { min-height: 100vh; }
+
+a   { text-decoration: none; }
+button { font-family: inherit; }
+
+h1 { font-size: 2.2rem;  font-weight: 700; letter-spacing: -1px;    line-height: 1.2; }
+h2 { font-size: 1.5rem;  font-weight: 600; letter-spacing: -0.5px; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p  { color: var(--text-secondary); }
+
+
+/* ==========================================================
+   §3  SCROLLBAR
+   ========================================================== */
+
+::-webkit-scrollbar       { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+
+/* ==========================================================
+   §4  UTILITIES
+   ========================================================== */
+
+.flex         { display: flex; }
+.flex-center  { display: flex; justify-content: center; align-items: center; }
+.flex-end     { display: flex; justify-content: flex-end; }
+
+.gap-sm { gap: 0.5rem; }
+.gap-md { gap: 1rem; }
+.gap-lg { gap: 2rem; }
+
+.mt-md  { margin-top: 1rem; }
+.mb-sm  { margin-bottom: 0.5rem; }
+.mb-md  { margin-bottom: 1rem; }
+.mb-lg  { margin-bottom: 2rem; }
+
+.p-lg   { padding: 2rem; }
+.p-xl   { padding: 3rem; }
+
+.text-center    { text-align: center; }
+.text-sm        { font-size: 0.85rem; }
+.text-secondary { color: var(--text-secondary); }
+
+.grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+
+/* ==========================================================
+   §5  COMPONENTS — Buttons, Inputs, Cards, Tags
+   ========================================================== */
+
+/* ---- Glassmorphism Card ---- */
+.card,
+.auth-card {
+    background: var(--surface);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: inset 0 1px 1px var(--border-highlight), var(--shadow);
+}
+
+/* ---- Button Base ---- */
+.btn {
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.3s var(--ease-smooth);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent), #b07846);
+    color: white;
+    box-shadow: 0 4px 12px rgba(195, 139, 89, 0.2);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(195, 139, 89, 0.4);
+    filter: brightness(1.1);
+}
+
+.btn-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.btn-danger:hover {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+}
+
+/* ---- View Toggle Buttons (topbar) ---- */
+.btn-view {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    height: 42px;
+    padding: 0 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-view:hover { background: rgba(255, 255, 255, 0.1); }
+
+.btn-view.active-view {
+    background: rgba(195, 139, 89, 0.15);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ---- Icon Button ---- */
+.icon-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---- Input ---- */
+.input {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.25s ease;
+}
+
+.input::placeholder { color: #6b7280; }
+
+.input:focus {
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 0 4px rgba(195, 139, 89, 0.15);
+}
+
+textarea.input { resize: vertical; }
+
+/* Fix dropdown options in dark mode */
+select.input option {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* ---- Tag Chip (single definition) ---- */
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.tag-chip:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Tag remove button (book detail page) */
+.remove-tag {
+    margin-left: 8px;
+    color: var(--danger);
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.remove-tag:hover {
+    color: #f87171;
+    transform: scale(1.2);
+}
+
+/* ---- Error Message ---- */
+.error-message {
+    margin-top: 1rem;
+    color: var(--danger);
+    display: none;
+    font-size: 0.9rem;
+    text-align: center;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+
+/* ==========================================================
+   §6  AUTH PAGES
+   ========================================================== */
+
+.auth-page { min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 2rem; }
+.auth-card  { width: 100%; max-width: 430px; padding: 3rem 2.5rem; border-radius: 24px; }
+
+.auth-logo    { text-align: center; margin-bottom: 2.5rem; }
+.auth-logo h1 {
+    font-size: 2.6rem;
+    letter-spacing: -2px;
+    background: linear-gradient(to right, #fff, var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.auth-logo p { margin-top: 0.5rem; font-size: 0.95rem; }
+
+.form-group       { margin-bottom: 1.5rem; }
+.form-group label { display: block; margin-bottom: 0.6rem; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); }
+
+.auth-footer      { text-align: center; margin-top: 2rem; font-size: 0.95rem; }
+.auth-link        { color: var(--accent); font-weight: 500; transition: color 0.2s; }
+.auth-link:hover  { color: white; }
+
+
+/* ==========================================================
+   §7  DASHBOARD LAYOUT
+   ========================================================== */
+
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+    width: var(--sidebar-w);
+    padding: 2rem 1.5rem;
+    border-right: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(20px);
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.sidebar__brand {
+    margin-bottom: 3rem;
+}
+
+.sidebar__brand h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.2rem;
+    color: var(--text-primary);
+}
+
+.sidebar__brand p {
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+}
+
+.sidebar__section {
+    margin-bottom: 2.5rem;
+}
+
+.sidebar__heading {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+}
+
+/* ---- Main Content ---- */
+.dashboard__main {
+    flex: 1;
+    padding: 2rem 3rem;
+    overflow-y: auto;
+    height: 100vh;
+}
+
+/* ---- Topbar ---- */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.topbar__search {
+    flex: 1;
+    max-width: 450px;
+}
+
+.topbar__search .input {
+    height: 42px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.topbar__sort-select {
+    width: 150px;
+    height: 42px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.topbar__direction {
+    height: 42px;
+    padding: 0 1rem;
+}
+
+.topbar__divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    margin: 0 0.25rem;
+}
+
+.topbar__add-btn {
+    height: 42px;
+    padding: 0 1.2rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+
+/* ==========================================================
+   §8  BOOK GRID & CARDS
+   ========================================================== */
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.book-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s var(--ease-out);
+}
+
+.book-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(195, 139, 89, 0.4);
+    box-shadow: var(--shadow-card-hover);
+}
+
+.book-cover {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-bottom: 1px solid var(--border);
+}
+
+.book-info   { padding: 1.2rem; }
+.book-title  {
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 0.3rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.book-author { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.8rem; }
+.book-status { font-size: 0.85rem; font-weight: 600; color: var(--accent); margin-bottom: 0.8rem; }
+.book-tags   { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+
+/* ==========================================================
+   §9  BOOK LIST VIEW  (with single-book fix)
+   ========================================================== */
+
+.books-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+/* ---- List Header Row ---- */
+.list-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.list-header__spacer { width: 60px; flex-shrink: 0; }
+
+/* ---- The Horizontal Row Card ---- */
+.book-row {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    max-height: 110px;        /* Hard cap — prevents single-book stretch */
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    width: 100%;
+}
+
+.book-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(4px);
+}
+
+/* Lock the cover thumbnail — absolute size, never stretch */
+.list-cover {
+    width: 60px;
+    height: 90px;
+    min-width: 60px;
+    min-height: 90px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Evenly distribute text columns */
+.book-row .list-title {
+    flex: 2;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-row .list-author {
+    flex: 1.5;
+    font-size: 0.95rem;
+}
+
+.book-row .list-status {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.book-row .list-tags {
+    flex: 1.5;
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+
+/* ==========================================================
+   §10  SIDEBAR FILTERS — Status & Tag Shelves
+   ========================================================== */
+
+.status-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.status-item {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-bottom: 0.25rem;
+}
+
+.status-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    transform: translateX(4px);
+}
+
+.status-item.active {
+    background: rgba(195, 139, 89, 0.15);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* Multi-select tag shelves */
+.tag-flex-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.shelf-toggle {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s var(--ease-smooth);
+}
+
+.shelf-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+.shelf-toggle.active {
+    background: rgba(176, 120, 70, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 500;
+    box-shadow: 0 0 12px rgba(176, 120, 70, 0.1);
+}
+
+
+/* ==========================================================
+   §11  BOOK DETAIL PAGE
+   ========================================================== */
+
+.page-container { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; }
+.page-header    { margin-bottom: 3rem; }
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.2s;
+}
+
+.back-link:hover {
+    color: var(--accent);
+    background: rgba(195, 139, 89, 0.1);
+    transform: translateX(-4px);
+}
+
+.book-info-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+.book-info-sidebar { position: sticky; top: 2rem; }
+
+.detail-cover-img {
+    width: 100%;
+    max-width: 240px;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    margin: 0 auto;
+    display: block;
+}
+
+.detail-title  { font-size: 2rem; line-height: 1.2; letter-spacing: -0.5px; }
+.detail-author { font-size: 1.15rem; }
+
+/* Tag container (detail page) */
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+/* Tag input area */
+#new-tag-input { padding: 0.6rem 1rem; }
+#add-tag-btn   { padding: 0.6rem 1.2rem; }
+
+
+/* ==========================================================
+   §12  SETTINGS PAGE
+   ========================================================== */
+
+.settings-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+}
+
+.settings-page .page-header { margin-bottom: 2rem; }
+
+.settings-page h1 {
+    margin-bottom: 2.5rem;
+    font-size: 2rem;
+}
+
+/* ---- Settings Cards ---- */
+.settings-card {
+    background: var(--surface);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: inset 0 1px 1px var(--border-highlight), var(--shadow);
+    padding: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.settings-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.settings-card__icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.settings-card__icon--metrics {
+    background: rgba(195, 139, 89, 0.15);
+}
+
+.settings-card__icon--prefs {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.settings-card__icon--danger {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.settings-card--danger {
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* ---- Stats Grid ---- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: border-color 0.2s ease;
+}
+
+.stat-card:hover {
+    border-color: rgba(195, 139, 89, 0.3);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* ---- Premium Sun/Moon Theme Toggle ---- */
+.theme-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s ease;
+}
+
+.theme-toggle-row:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.theme-toggle-row__info h3 {
+    margin-bottom: 0.15rem;
+    font-size: 1rem;
+}
+
+.theme-toggle-row__info p {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+/* The toggle switch shell */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 56px;
+    height: 30px;
+    flex-shrink: 0;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* Track */
+.theme-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    transition: background 0.4s var(--ease-smooth),
+                border-color 0.4s var(--ease-smooth);
+}
+
+/* Knob */
+.theme-switch .slider::before {
+    content: "";
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    transition: transform 0.35s var(--ease-smooth);
+    z-index: 2;
+}
+
+/* Moon icon (default — dark mode) */
+.theme-switch .slider::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23475569'%3E%3Cpath d='M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Checked state — light mode active */
+.theme-switch input:checked + .slider {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.theme-switch input:checked + .slider::before {
+    transform: translateX(26px);
+    background: #fffbeb;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+}
+
+/* Swap icon: hide moon, show sun */
+.theme-switch input:checked + .slider::after {
+    left: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b45309'%3E%3Cpath d='M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z'/%3E%3C/svg%3E");
+}
+
+
+/* ==========================================================
+   §13  LIGHT THEME OVERRIDES
+   ========================================================== */
+
+body.light-theme {
+    --bg:               #f8fafc;
+    --bg-secondary:     #e2e8f0;
+    --surface:          rgba(255, 255, 255, 0.65);
+    --surface-hover:    rgba(255, 255, 255, 0.9);
+    --text-primary:     #0f172a;
+    --text-secondary:   #475569;
+    --border:           rgba(0, 0, 0, 0.1);
+    --border-highlight: rgba(255, 255, 255, 0.8);
+    --accent:           #b07846;
+    --accent-hover:     #c38b59;
+
+    background: radial-gradient(circle at top, #f1f5f9 0%, #cbd5e1 100%);
+    background-attachment: fixed;
+}
+
+/* Light-mode sidebar needs a softer tint */
+body.light-theme .sidebar {
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Light-mode book rows */
+body.light-theme .book-row {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+body.light-theme .book-row:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+/* Light-mode stat cards */
+body.light-theme .stat-card {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* Light-mode toggle track default */
+body.light-theme .theme-switch .slider {
+    background: #cbd5e1;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+
+/* ==========================================================
+   §14  RESPONSIVE BREAKPOINTS
+   ========================================================== */
+
+@media (max-width: 1024px) {
+    .dashboard__main { padding: 2rem 1.5rem; }
+    .topbar { flex-wrap: wrap; }
+    .topbar__search { max-width: 100%; }
+    .book-info-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    .dashboard {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem;
+    }
+
+    .dashboard__main {
+        height: auto;
+        padding: 1.5rem;
+    }
+
+    .topbar__actions { flex-wrap: wrap; }
+
+    .books-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .book-info-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-page { padding: 1.5rem 1rem; }
+    .settings-card { padding: 1.5rem; }
+}

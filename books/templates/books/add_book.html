@@ -1,0 +1,43 @@
+{% extends "books/base.html" %}
+{% load static %}
+
+{% block title %}
+Add Book | Aletheia
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    
+    <div class="page-header mb-lg">
+        <a href="/api/" class="back-link">← Back to Library</a>
+    </div>
+
+    <div class="card p-xl mb-lg text-center" style="max-width: 800px; margin: 0 auto 3rem auto;">
+        <h1 class="mb-sm">Discover Books</h1>
+        <p class="text-secondary mb-lg">Search the Open Library database to add to your collection.</p>
+        
+        <form id="search-form" class="flex gap-sm" style="max-width: 600px; margin: 0 auto;">
+            <input type="text" id="search-input" class="input" placeholder="Search by title, author, or ISBN..." required autocomplete="off">
+            <button type="submit" id="search-btn" class="btn btn-primary" style="min-width: 120px;">Search</button>
+        </form>
+    </div>
+
+    <div id="loading-spinner" class="text-center text-secondary mb-lg" style="display: none;">
+        <p>Searching the archives...</p>
+    </div>
+
+    <div id="results-container" class="books-grid">
+        </div>
+
+    <div id="load-more-container" class="text-center mt-xl" style="display: none; margin-top: 3rem;">
+        <button type="button" id="load-more-btn" class="btn btn-primary" style="min-width: 200px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); color: var(--text-primary);">
+            Load More Results
+        </button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'books/js/add_book.js' %}"></script>
+{% endblock %}

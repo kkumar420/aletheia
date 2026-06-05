@@ -1,0 +1,79 @@
+{% extends "books/base.html" %}
+{% load static %}
+
+{% block title %}
+Library Dashboard | Aletheia
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    
+    <aside class="sidebar">
+        
+        <div class="sidebar__brand">
+            <h1>Aletheia</h1>
+            <p class="text-secondary">Personal Library</p>
+        </div>
+
+        <div class="sidebar__section">
+            <h4 class="sidebar__heading">Status</h4>
+            <ul class="status-links">
+                <li class="status-item active" data-status="ALL">All Books</li>
+                <li class="status-item" data-status="WANT">Want To Read</li>
+                <li class="status-item" data-status="READING">Reading</li>
+                <li class="status-item" data-status="READ">Finished</li>
+                <li class="status-item" data-status="DNF">Did Not Finish</li>
+            </ul>
+        </div>
+
+        <div class="sidebar__section">
+            <h4 class="sidebar__heading">Tags</h4>
+            <div id="tag-shelves-container" class="tag-flex-wrap">
+                <span class="text-secondary text-sm">Loading...</span>
+            </div>
+        </div>
+        
+    </aside>
+
+    <main class="dashboard__main">
+        
+        <header class="topbar">
+            
+            <div class="topbar__search">
+                <input type="text" id="search-input" class="input" placeholder="Search title or author..." autocomplete="off">
+            </div>
+
+            <div class="topbar__actions">
+                
+                <select id="sort-property" class="input topbar__sort-select">
+                    <option value="date_added">Date Added</option>
+                    <option value="title">Title</option>
+                    <option value="rating">Rating</option>
+                    <option value="start_date">Date Started</option>
+                    <option value="finish_date">Date Finished</option>
+                </select>
+                
+                <button type="button" id="sort-direction-btn" class="btn btn-view topbar__direction" data-dir="desc">Descending ↓</button>
+
+                <div class="topbar__divider"></div>
+
+                <button type="button" id="grid-view-btn" class="btn btn-view active-view" title="Grid View">▤</button>
+                <button type="button" id="list-view-btn" class="btn btn-view" title="List View">☰</button>
+                
+                <button id="add-book-btn" class="btn btn-primary topbar__add-btn">+ Add Book</button>
+                <button id="settings-btn" class="btn btn-view" title="Account Settings">⚙</button>
+            </div>
+        </header>
+
+        <div id="books-container" class="books-grid">
+            <div class="text-center text-secondary" style="grid-column: 1 / -1; padding: 3rem;">
+                <p>Unlocking your personal archives...</p>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'books/js/dashboard.js' %}"></script>
+{% endblock %}

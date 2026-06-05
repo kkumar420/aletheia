@@ -1,0 +1,107 @@
+{% extends "books/base.html" %}
+{% load static %}
+
+{% block title %}
+Book Details | Aletheia
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    
+    <div class="page-header">
+        <a href="/api/" class="back-link">← Back to Library</a>
+    </div>
+
+    <div class="book-info-layout">
+        
+        <aside class="book-info-sidebar">
+            <div class="card p-lg text-center">
+                <img id="detail-cover" src="" class="detail-cover-img" alt="Cover">
+                <h1 id="detail-title" class="detail-title mt-md">Loading...</h1>
+                
+                <p class="mb-md">
+                    <a id="detail-author" href="#" class="detail-author text-secondary" style="color: var(--accent); font-weight: 500; font-size: 1.1rem; transition: color 0.2s; text-decoration: none;"></a>
+                </p>
+                
+                <div id="detail-tags" class="tag-container mb-md"></div>
+
+                <div class="flex gap-sm">
+                    <input type="text" id="new-tag-input" class="input" placeholder="Add a tag...">
+                    <button type="button" id="add-tag-btn" class="btn btn-primary">Add</button>
+                </div>
+            </div>
+
+            <div class="card p-lg mt-md">
+                <h3 class="mb-sm">E-Book File</h3>
+                <div id="ebook-container">
+                    <p class="text-secondary text-sm">No file uploaded.</p>
+                </div>
+            </div>
+
+            <div class="card p-lg mt-md" style="border-color: rgba(239, 68, 68, 0.2);">
+                <h3 class="mb-sm" style="color: var(--danger);">Danger Zone</h3>
+                <p class="text-secondary text-sm mb-md">Remove this book permanently from your library collection.</p>
+                <button type="button" id="delete-book-btn" class="btn btn-primary" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
+                    Delete Book
+                </button>
+            </div>
+        </aside>
+
+        <main class="book-info-main card p-xl">
+            <h2 class="mb-lg">Reading Journey</h2>
+            
+            <form id="book-update-form">
+                <div class="grid-2-col mb-lg">
+                    <div class="form-group">
+                        <label for="detail-status">Current Status</label>
+                        <select id="detail-status" class="input">
+                            <option value="WANT">Want To Read</option>
+                            <option value="READING">Reading</option>
+                            <option value="READ">Finished</option>
+                            <option value="DNF">Did Not Finish</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="detail-rating">Rating (1-5)</label>
+                        <input type="number" id="detail-rating" class="input" min="1" max="5" step="0.5" placeholder="Unrated">
+                    </div>
+                </div>
+
+                <div class="grid-2-col mb-lg">
+                    <div class="form-group">
+                        <label for="detail-start-date">Date Started</label>
+                        <input type="date" id="detail-start-date" class="input">
+                    </div>
+                    <div class="form-group">
+                        <label for="detail-finish-date">Date Finished</label>
+                        <input type="date" id="detail-finish-date" class="input">
+                    </div>
+                </div>
+                
+                <div class="form-group mb-lg">
+                    <label for="detail-notes">Personal Notes</label>
+                    <textarea id="detail-notes" class="input" rows="12" placeholder="Record your insights, quotes, or thoughts on this book..."></textarea>
+                </div>
+
+                <div class="flex-end">
+                    <button type="submit" id="save-btn" class="btn btn-primary">
+                        Save Changes
+                    </button>
+                </div>
+                
+                <div id="status-message" class="mt-md text-sm" style="display: none;"></div>
+            </form>
+        </main>
+
+    </div>
+</div>
+
+<script>
+    const DJANGO_BOOK_ID = "{{ book_id }}";
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'books/js/book_info.js' %}"></script>
+{% endblock %}
