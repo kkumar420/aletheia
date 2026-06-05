@@ -172,6 +172,20 @@ p  { color: var(--text-secondary); }
     border-color: var(--danger);
 }
 
+.btn-danger-full {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    width: 100%;
+    transition: all 0.3s var(--ease-smooth);
+}
+
+.btn-danger-full:hover {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+}
+
 /* ---- View Toggle Buttons (topbar) ---- */
 .btn-view {
     background: rgba(255, 255, 255, 0.03);
@@ -481,6 +495,25 @@ select.input option {
 .book-status { font-size: 0.85rem; font-weight: 600; color: var(--accent); margin-bottom: 0.8rem; }
 .book-tags   { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
+.author-link {
+    cursor: pointer;
+    color: var(--accent);
+    font-weight: 500;
+    transition: color 0.2s ease;
+    text-decoration: none;
+}
+
+.author-link:hover {
+    color: var(--accent-hover);
+}
+
+/* SVG inside view buttons */
+.btn-view svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
 
 /* ==========================================================
    §9  BOOK LIST VIEW  (with single-book fix)
@@ -636,6 +669,43 @@ select.input option {
     color: var(--accent);
     font-weight: 500;
     box-shadow: 0 0 12px rgba(176, 120, 70, 0.1);
+}
+
+/* Heading row with clear button */
+.sidebar__heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.sidebar__heading-row .sidebar__heading {
+    margin-bottom: 0;
+}
+
+.sidebar__clear-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sidebar__clear-btn.is-visible {
+    opacity: 0.7;
+    pointer-events: auto;
+}
+
+.sidebar__clear-btn:hover {
+    color: var(--accent);
+    background: rgba(195, 139, 89, 0.1);
+    opacity: 1;
 }
 
 
@@ -903,6 +973,305 @@ select.input option {
 
 
 /* ==========================================================
+   §15  SORT POPOVER
+   ========================================================== */
+
+.sort-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.sort-trigger svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.sort-popover-anchor {
+    position: relative;
+}
+
+.sort-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 240px;
+    background: var(--surface);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 1px 1px var(--border-highlight), 0 24px 48px rgba(0, 0, 0, 0.5);
+    padding: 0.75rem;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.96);
+    transition: all 0.2s var(--ease-smooth);
+}
+
+.sort-popover.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.sort-popover__label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    padding: 0.4rem 0.5rem 0.3rem;
+}
+
+.sort-popover__option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    font-family: inherit;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sort-popover__option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+}
+
+.sort-popover__option.is-active {
+    background: rgba(195, 139, 89, 0.12);
+    color: var(--accent);
+}
+
+.sort-popover__divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0.5rem 0;
+}
+
+.sort-popover__dir-group {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.sort-popover__dir {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    font-family: inherit;
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sort-popover__dir svg {
+    width: 14px;
+    height: 14px;
+}
+
+.sort-popover__dir:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+.sort-popover__dir.is-active {
+    background: rgba(195, 139, 89, 0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+
+/* ==========================================================
+   §16  CUSTOM DATE INPUT
+   ========================================================== */
+
+input[type="date"].input {
+    position: relative;
+    color-scheme: dark;
+}
+
+input[type="date"].input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px;
+    opacity: 0.5;
+    filter: invert(0.7);
+    transition: opacity 0.2s ease;
+}
+
+input[type="date"].input::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+
+/* ==========================================================
+   §17  ADVANCED SEARCH PANEL
+   ========================================================== */
+
+.add-book-card {
+    max-width: 800px;
+    margin: 0 auto 3rem auto;
+}
+
+.add-book-search {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.add-book-search__submit {
+    min-width: 120px;
+}
+
+.advanced-toggle {
+    height: 42px;
+    width: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.advanced-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.advanced-toggle.is-active {
+    background: rgba(195, 139, 89, 0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.advanced-toggle svg {
+    width: 18px;
+    height: 18px;
+}
+
+.advanced-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s var(--ease-smooth),
+                opacity 0.25s ease,
+                margin-top 0.35s ease;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.advanced-panel.is-open {
+    max-height: 320px;
+    opacity: 1;
+    margin-top: 1.5rem;
+}
+
+.advanced-panel__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    text-align: left;
+}
+
+.advanced-panel__grid .form-group label {
+    font-size: 0.8rem;
+    margin-bottom: 0.4rem;
+}
+
+.advanced-panel__grid .input {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+}
+
+
+/* ==========================================================
+   §18  EBOOK UPLOAD
+   ========================================================== */
+
+.ebook-upload {
+    margin-top: 0.75rem;
+}
+
+.ebook-upload__input {
+    display: none;
+}
+
+.ebook-upload__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ebook-upload__btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(195, 139, 89, 0.06);
+}
+
+.ebook-upload__btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ebook-file-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.ebook-file-row__name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.ebook-file-row__download {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    text-decoration: none;
+}
+
+
+/* ==========================================================
    §13  LIGHT THEME OVERRIDES
    ========================================================== */
 
@@ -945,6 +1314,46 @@ body.light-theme .stat-card {
 /* Light-mode toggle track default */
 body.light-theme .theme-switch .slider {
     background: #cbd5e1;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Light-mode sort popover */
+body.light-theme .sort-popover {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 24px 48px rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .sort-popover__option:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .sort-popover__dir {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Light-mode date inputs */
+body.light-theme input[type="date"].input {
+    color-scheme: light;
+}
+
+body.light-theme input[type="date"].input::-webkit-calendar-picker-indicator {
+    filter: none;
+    opacity: 0.5;
+}
+
+/* Light-mode ebook upload */
+body.light-theme .ebook-upload__btn {
+    border-color: rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+body.light-theme .ebook-file-row {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* Light-mode advanced panel */
+body.light-theme .advanced-toggle {
+    background: rgba(0, 0, 0, 0.03);
     border-color: rgba(0, 0, 0, 0.1);
 }
 
@@ -991,4 +1400,8 @@ body.light-theme .theme-switch .slider {
 
     .settings-page { padding: 1.5rem 1rem; }
     .settings-card { padding: 1.5rem; }
+
+    .sort-popover { width: 200px; }
+    .advanced-panel__grid { grid-template-columns: 1fr; }
+    .add-book-card { margin: 0 auto 2rem auto; }
 }

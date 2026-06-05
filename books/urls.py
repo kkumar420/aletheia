@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import AuthorViewSet, PublisherViewSet, BookViewSet, UserbookViewSet, RegisterView, OpenLibrarySearchView, AddBookView, TagViewSet, login_page, dashboard, book_info_page, add_book_page, settings_page
+from .views import AuthorViewSet, PublisherViewSet, BookViewSet, UserbookViewSet, RegisterView, OpenLibrarySearchView, AddBookView, TagViewSet, login_page, dashboard, book_info_page, add_book_page, settings_page, register_page
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -24,6 +24,7 @@ urlpatterns = [
     path('book/<uuid:pk>/', book_info_page, name='book_info_page'),
     path('add-book-page/', add_book_page, name='add_book_page'),
     path('settings-page/', settings_page, name='settings_page'),
+    path('register-page/', register_page, name='register_page'),
 ]
 
 urlpatterns += router.urls

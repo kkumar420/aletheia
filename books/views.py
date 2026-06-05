@@ -1,6 +1,7 @@
 import requests
 from django.shortcuts import render
 from django.contrib.auth import authenticate
+from django.views.decorators.cache import never_cache
 from rest_framework import viewsets, filters, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -114,10 +115,15 @@ class OpenLibrarySearchView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # UPDATED: Accept a generic 'q' parameter from our frontend search bar
+        # Accept both generic 'q' and field-specific params for advanced search
         query = request.query_params.get('q', '')
+        title = request.query_params.get('title', '')
+        author = request.query_params.get('author', '')
+        isbn = request.query_params.get('isbn', '')
+        language = request.query_params.get('language', '')
 
-        if not query:
+        # At least one search parameter must be provided
+        if not any([query, title, author, isbn, language]):
             return Response(
                 {"error": "A search query must be provided"}, 
                 status=400
@@ -127,15 +133,22 @@ class OpenLibrarySearchView(APIView):
 
         url = "https://openlibrary.org/search.json"
 
+        # Build params — forward individual fields when provided
+        api_params = {
+            "page": page_index,
+            "limit": 5,
+            "fields": "title,author_name,publisher,language,isbn,cover_i,key"
+        }
+        if query:    api_params["q"] = query
+        if title:    api_params["title"] = title
+        if author:   api_params["author"] = author
+        if isbn:     api_params["isbn"] = isbn
+        if language: api_params["language"] = language
+
         try:
             response = requests.get(
                 url,
-                params={
-                    "q": query,
-                    "page":page_index,
-                    "limit": 5, # Bumping this slightly so the grid looks nice
-                    "fields": "title,author_name,publisher,language,isbn,cover_i,key"
-                },
+                params=api_params,
                 timeout=10
             )
             response.raise_for_status()
@@ -229,21 +242,24 @@ class AddBookView(APIView):
 # 3. HTML Template Views (Frontend Routing)
 # ==========================================
 
-# ==========================================
-# 3. HTML Template Views (Frontend Routing)
-# ==========================================
+@never_cache
 def dashboard(request):
     return render(request, "books/dashboard.html")
 
 def login_page(request):
     return render(request, "books/login.html")
 
+@never_cache
 def book_info_page(request, pk):
     return render(request, "books/book_info.html", {"book_id": pk})
 
-# UPDATED: Added the route for the new page we just built!
+@never_cache
 def add_book_page(request):
     return render(request, "books/add_book.html")
 
+@never_cache
 def settings_page(request):
     return render(request, "books/settings.html")
+
+def register_page(request):
+    return render(request, "books/register.html")

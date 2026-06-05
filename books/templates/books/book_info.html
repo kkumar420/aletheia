@@ -20,7 +20,7 @@ Book Details | Aletheia
                 <h1 id="detail-title" class="detail-title mt-md">Loading...</h1>
                 
                 <p class="mb-md">
-                    <a id="detail-author" href="#" class="detail-author text-secondary" style="color: var(--accent); font-weight: 500; font-size: 1.1rem; transition: color 0.2s; text-decoration: none;"></a>
+                    <a id="detail-author" href="#" class="detail-author author-link"></a>
                 </p>
                 
                 <div id="detail-tags" class="tag-container mb-md"></div>
@@ -36,12 +36,19 @@ Book Details | Aletheia
                 <div id="ebook-container">
                     <p class="text-secondary text-sm">No file uploaded.</p>
                 </div>
+                <div class="ebook-upload">
+                    <input type="file" id="ebook-file-input" class="ebook-upload__input" accept=".pdf,.epub">
+                    <button type="button" id="ebook-upload-btn" class="ebook-upload__btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V2M4 6l4-4 4 4"/><path d="M14 10v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3"/></svg>
+                        Upload File
+                    </button>
+                </div>
             </div>
 
-            <div class="card p-lg mt-md" style="border-color: rgba(239, 68, 68, 0.2);">
+            <div class="card p-lg mt-md settings-card--danger">
                 <h3 class="mb-sm" style="color: var(--danger);">Danger Zone</h3>
                 <p class="text-secondary text-sm mb-md">Remove this book permanently from your library collection.</p>
-                <button type="button" id="delete-book-btn" class="btn btn-primary" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
+                <button type="button" id="delete-book-btn" class="btn btn-danger-full">
                     Delete Book
                 </button>
             </div>

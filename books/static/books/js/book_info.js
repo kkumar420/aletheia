@@ -65,16 +65,25 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // NEW: Setup the form submission listener
+    // Setup the form submission listener
     const updateForm = document.getElementById("book-update-form");
     if (updateForm) {
         updateForm.addEventListener("submit", handleFormSubmit);
     }
 
-    // (Inside your DOMContentLoaded block, add this listener at the very bottom)
+    // Setup the delete button listener
     const deleteBtn = document.getElementById("delete-book-btn");
     if (deleteBtn) {
         deleteBtn.addEventListener("click", handleDeleteBook);
+    }
+
+    // Setup the ebook upload listeners
+    const ebookUploadBtn = document.getElementById("ebook-upload-btn");
+    const ebookFileInput = document.getElementById("ebook-file-input");
+
+    if (ebookUploadBtn && ebookFileInput) {
+        ebookUploadBtn.addEventListener("click", () => ebookFileInput.click());
+        ebookFileInput.addEventListener("change", handleEbookUpload);
     }
 });
 
@@ -89,16 +98,13 @@ async function fetchAndPopulateData() {
         // 1. Populate Header info
         document.getElementById("detail-title").textContent = data.book_title;
         
-        // Locate this section inside fetchAndPopulateData():
-        document.getElementById("detail-title").textContent = data.book_title;
-        
         const authorEl = document.getElementById("detail-author");
         if (authorEl) {
             const authorName = data.author || "Unknown Author";
             authorEl.textContent = authorName;
             
             if (data.author) {
-                // THE FIX: Point back to your local library root instead of the add-book page
+                // Point back to your local library root instead of the add-book page
                 authorEl.href = `/api/?author=${encodeURIComponent(authorName)}`;
             } else {
                 authorEl.style.pointerEvents = "none";
@@ -119,21 +125,14 @@ async function fetchAndPopulateData() {
         currentTags = data.tags ? data.tags.map(t => t.name) : [];
         renderTags();
 
-        // 4. THE FIX: Populate E-Book File
+        // 4. Populate E-Book File
         const ebookContainer = document.getElementById("ebook-container");
         if (data.ebook_file && ebookContainer) {
-            // Extract just the filename from the end of the URL for a cleaner display
             const fileName = data.ebook_file.split('/').pop(); 
-            
-            // Generate a clean row with the filename and a download button
             ebookContainer.innerHTML = `
-                <div class="flex gap-sm" style="align-items: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-                    <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem;">
-                        📄 ${fileName}
-                    </div>
-                    <a href="${data.ebook_file}" target="_blank" download class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; text-decoration: none;">
-                        Download
-                    </a>
+                <div class="ebook-file-row">
+                    <div class="ebook-file-row__name">📄 ${fileName}</div>
+                    <a href="${data.ebook_file}" target="_blank" download class="btn btn-primary ebook-file-row__download">Download</a>
                 </div>
             `;
         }
@@ -201,7 +200,7 @@ async function syncTags() {
     }
 }
 
-// --- NEW: Form Submission Logic ---
+// --- Form Submission Logic (with Save Redirect) ---
 async function handleFormSubmit(e) {
     e.preventDefault(); // Prevent the page from refreshing
     
@@ -216,11 +215,13 @@ async function handleFormSubmit(e) {
     // Gather the data from the form
     const payload = {
         status: document.getElementById("detail-status").value,
-        rating: document.getElementById("detail-rating").value || null, // Convert empty string to null
+        rating: document.getElementById("detail-rating").value || null,
         start_date: document.getElementById("detail-start-date").value || null,
         finish_date: document.getElementById("detail-finish-date").value || null,
         notes: document.getElementById("detail-notes").value
     };
+
+    let redirecting = false;
 
     try {
         const response = await apiFetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
@@ -230,32 +231,83 @@ async function handleFormSubmit(e) {
         });
 
         if (response.ok) {
-            // Success Feedback
-            statusMsg.textContent = "Reading journey updated successfully!";
-            statusMsg.style.color = "#10b981"; // Success green
+            // Success — redirect back to dashboard after a brief flash
+            redirecting = true;
+            submitBtn.textContent = "Saved ✓";
+            setTimeout(() => {
+                window.location.href = "/api/";
+            }, 600);
         } else {
             const errData = await response.json();
             throw new Error(errData.detail || "Failed to save changes");
         }
     } catch (error) {
         console.error("Save error:", error);
-        // Error Feedback
         statusMsg.textContent = "Error saving changes. Please try again.";
         statusMsg.style.color = "var(--danger)";
     } finally {
-        // Reset UI
-        statusMsg.style.display = "block";
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Save Changes";
-        
-        // Hide the success message after 3 seconds so it doesn't linger
-        setTimeout(() => {
-            statusMsg.style.display = "none";
-        }, 3000);
+        if (!redirecting) {
+            statusMsg.style.display = "block";
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Save Changes";
+            
+            setTimeout(() => {
+                statusMsg.style.display = "none";
+            }, 3000);
+        }
     }
 }
 
-// --- NEW: Book Deletion Logic ---
+// --- Ebook Upload Logic ---
+async function handleEbookUpload() {
+    const fileInput = document.getElementById("ebook-file-input");
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const uploadBtn = document.getElementById("ebook-upload-btn");
+    const originalHtml = uploadBtn.innerHTML;
+    uploadBtn.innerHTML = "Uploading...";
+    uploadBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append("ebook_file", file);
+
+    try {
+        // Use fetch directly instead of apiFetch — FormData must not have Content-Type set manually
+        const token = localStorage.getItem("access");
+        const response = await fetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
+            method: "PATCH",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            // Re-render the ebook container with the new file
+            const ebookContainer = document.getElementById("ebook-container");
+            if (data.ebook_file && ebookContainer) {
+                const fileName = data.ebook_file.split('/').pop();
+                ebookContainer.innerHTML = `
+                    <div class="ebook-file-row">
+                        <div class="ebook-file-row__name">📄 ${fileName}</div>
+                        <a href="${data.ebook_file}" target="_blank" download class="btn btn-primary ebook-file-row__download">Download</a>
+                    </div>
+                `;
+            }
+        } else {
+            throw new Error("Upload failed");
+        }
+    } catch (error) {
+        console.error("Ebook upload error:", error);
+        alert("Failed to upload file. Please try again.");
+    } finally {
+        uploadBtn.innerHTML = originalHtml;
+        uploadBtn.disabled = false;
+        fileInput.value = ""; // Reset the file input
+    }
+}
+
+// --- Book Deletion Logic ---
 async function handleDeleteBook() {
     const confirmDeletion = confirm("Are you absolutely sure you want to remove this book from your library? This action cannot be undone.");
     

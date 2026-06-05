@@ -27,7 +27,10 @@ Library Dashboard | Aletheia
         </div>
 
         <div class="sidebar__section">
-            <h4 class="sidebar__heading">Tags</h4>
+            <div class="sidebar__heading-row">
+                <h4 class="sidebar__heading">Tags</h4>
+                <button type="button" id="clear-tags-btn" class="sidebar__clear-btn">Clear</button>
+            </div>
             <div id="tag-shelves-container" class="tag-flex-wrap">
                 <span class="text-secondary text-sm">Loading...</span>
             </div>
@@ -45,20 +48,43 @@ Library Dashboard | Aletheia
 
             <div class="topbar__actions">
                 
-                <select id="sort-property" class="input topbar__sort-select">
-                    <option value="date_added">Date Added</option>
-                    <option value="title">Title</option>
-                    <option value="rating">Rating</option>
-                    <option value="start_date">Date Started</option>
-                    <option value="finish_date">Date Finished</option>
-                </select>
-                
-                <button type="button" id="sort-direction-btn" class="btn btn-view topbar__direction" data-dir="desc">Descending ↓</button>
+                <!-- Sort Popover -->
+                <div class="sort-popover-anchor">
+                    <button type="button" id="sort-trigger-btn" class="btn btn-view sort-trigger" title="Sort">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+                        <span>Sort</span>
+                    </button>
+                    <div id="sort-popover" class="sort-popover">
+                        <div class="sort-popover__label">Sort By</div>
+                        <button type="button" class="sort-popover__option is-active" data-sort="date_added">Date Added</button>
+                        <button type="button" class="sort-popover__option" data-sort="title">Title</button>
+                        <button type="button" class="sort-popover__option" data-sort="rating">Rating</button>
+                        <button type="button" class="sort-popover__option" data-sort="start_date">Date Started</button>
+                        <button type="button" class="sort-popover__option" data-sort="finish_date">Date Finished</button>
+                        <div class="sort-popover__divider"></div>
+                        <div class="sort-popover__label">Direction</div>
+                        <div class="sort-popover__dir-group">
+                            <button type="button" class="sort-popover__dir is-active" data-dir="desc">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg>
+                                Desc
+                            </button>
+                            <button type="button" class="sort-popover__dir" data-dir="asc">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg>
+                                Asc
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="topbar__divider"></div>
 
-                <button type="button" id="grid-view-btn" class="btn btn-view active-view" title="Grid View">▤</button>
-                <button type="button" id="list-view-btn" class="btn btn-view" title="List View">☰</button>
+                <!-- View Toggle with SVG Icons -->
+                <button type="button" id="grid-view-btn" class="btn btn-view active-view" title="Grid View">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
+                </button>
+                <button type="button" id="list-view-btn" class="btn btn-view" title="List View">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="1" y1="3.5" x2="15" y2="3.5"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12.5" x2="15" y2="12.5"/></svg>
+                </button>
                 
                 <button id="add-book-btn" class="btn btn-primary topbar__add-btn">+ Add Book</button>
                 <button id="settings-btn" class="btn btn-view" title="Account Settings">⚙</button>

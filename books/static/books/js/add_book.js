@@ -1,7 +1,8 @@
 // --- Global Pagination State ---
-let currentQuery = "";
+let currentSearchParams = "";
 let currentPage = 1;
-const resultsLimit = 6; // Matching an even grid alignment layout better
+let isAdvancedMode = false;
+const resultsLimit = 6;
 
 // --- API Interceptor ---
 async function apiFetch(url, options = {}) {
@@ -34,25 +35,50 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchForm = document.getElementById("search-form");
     const searchInput = document.getElementById("search-input");
     const loadMoreBtn = document.getElementById("load-more-btn");
+    const advancedToggle = document.getElementById("advanced-toggle");
+    const advancedPanel = document.getElementById("advanced-panel");
     
+    // Advanced search toggle
+    if (advancedToggle && advancedPanel) {
+        advancedToggle.addEventListener("click", () => {
+            isAdvancedMode = !isAdvancedMode;
+            advancedPanel.classList.toggle("is-open", isAdvancedMode);
+            advancedToggle.classList.toggle("is-active", isAdvancedMode);
+
+            if (isAdvancedMode) {
+                searchInput.placeholder = "General search (optional)...";
+                searchInput.removeAttribute("required");
+            } else {
+                searchInput.placeholder = "Search by title, author, or ISBN...";
+                searchInput.setAttribute("required", "");
+            }
+        });
+    }
+
     if (searchForm) {
         searchForm.addEventListener("submit", (e) => {
             e.preventDefault();
-            const query = searchInput.value.trim();
-            if (query) {
-                // Initial fresh search initialization sequence
-                currentQuery = query;
-                currentPage = 1; 
-                document.getElementById("results-container").innerHTML = ""; 
-                performSearch(currentQuery, currentPage);
+            currentPage = 1;
+            document.getElementById("results-container").innerHTML = "";
+
+            if (isAdvancedMode) {
+                const params = buildAdvancedParams();
+                if (!params) return; // Nothing to search
+                currentSearchParams = params;
+            } else {
+                const query = searchInput.value.trim();
+                if (!query) return;
+                currentSearchParams = `q=${encodeURIComponent(query)}`;
             }
+
+            performSearch(currentSearchParams, currentPage);
         });
     }
 
     if (loadMoreBtn) {
         loadMoreBtn.addEventListener("click", () => {
-            currentPage++; // Step up to next dataset index window
-            performSearch(currentQuery, currentPage);
+            currentPage++;
+            performSearch(currentSearchParams, currentPage);
         });
     }
 
@@ -61,14 +87,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const authorParam = urlParams.get('author');
     if (authorParam && searchInput) {
         searchInput.value = authorParam;
-        currentQuery = authorParam;
+        currentSearchParams = `q=${encodeURIComponent(authorParam)}`;
         currentPage = 1;
-        performSearch(currentQuery, currentPage);
+        performSearch(currentSearchParams, currentPage);
     }
 });
 
+// --- Build Advanced Search Params ---
+function buildAdvancedParams() {
+    const params = new URLSearchParams();
+    const title = document.getElementById("adv-title")?.value.trim();
+    const author = document.getElementById("adv-author")?.value.trim();
+    const isbn = document.getElementById("adv-isbn")?.value.trim();
+    const language = document.getElementById("adv-language")?.value;
+    const general = document.getElementById("search-input")?.value.trim();
+
+    if (general) params.set("q", general);
+    if (title) params.set("title", title);
+    if (author) params.set("author", author);
+    if (isbn) params.set("isbn", isbn);
+    if (language) params.set("language", language);
+
+    const result = params.toString();
+    return result || null;
+}
+
 // --- Paginated Search Logic ---
-async function performSearch(query, page) {
+async function performSearch(searchParams, page) {
     const container = document.getElementById("results-container");
     const spinner = document.getElementById("loading-spinner");
     const searchBtn = document.getElementById("search-btn");
@@ -82,12 +127,11 @@ async function performSearch(query, page) {
         loadMoreBtn.disabled = true;
         loadMoreBtn.textContent = "Loading More...";
     } else {
-        loadMoreContainer.style.display = "none"; // Hide button on baseline execution initialization
+        loadMoreContainer.style.display = "none";
     }
 
     try {
-        // Forward query string along with page parameter indices down to views endpoint
-        const response = await apiFetch(`/api/search-openlibrary/?q=${encodeURIComponent(query)}&page=${page}`);
+        const response = await apiFetch(`/api/search-openlibrary/?${searchParams}&page=${page}`);
         
         if (!response.ok) throw new Error("Search proxy returned error status.");
         
@@ -120,13 +164,12 @@ function renderResults(results, page) {
         if (page === 1) {
             container.innerHTML = `<p class="text-secondary" style="grid-column: 1 / -1; text-align: center;">No matching entries found inside public archives.</p>`;
         } else {
-            loadMoreContainer.style.display = "none"; // Hide panel entirely if page tail hits terminus boundary limits
+            loadMoreContainer.style.display = "none";
             alert("You have reached the end of all available library records.");
         }
         return;
     }
 
-    // Map rows arrays chunks natively 
     const newCardsHtml = results.map(book => {
         const title = book.title || "Unknown Title";
         const author = book.author_name || "Unknown Author";
@@ -160,11 +203,9 @@ function renderResults(results, page) {
     if (page === 1) {
         container.innerHTML = newCardsHtml;
     } else {
-        // APPEND data cards directly to layout grid elements instead of overwriting historical lists
         container.insertAdjacentHTML('beforeend', newCardsHtml);
     }
 
-    // Dynamic visibility assignment evaluation: display only if returned set indicates potential further depths
     if (results.length >= 5) {
         loadMoreContainer.style.display = "block";
     } else {
@@ -173,7 +214,7 @@ function renderResults(results, page) {
 
     // Rebind newly introduced transaction click parameters anchors safely
     container.querySelectorAll(".add-to-lib-btn").forEach(btn => {
-        btn.replaceWith(btn.cloneNode(true)); // Avoid event doubling leak traps across paginated append overlays
+        btn.replaceWith(btn.cloneNode(true));
     });
     
     document.querySelectorAll(".add-to-lib-btn").forEach(btn => {
@@ -181,7 +222,6 @@ function renderResults(results, page) {
     });
 }
 
-// --- Add to Library Logic ---
 // --- Add to Library Logic & Instant Redirect ---
 async function handleAddBook(e) {
     const button = e.target;
@@ -209,10 +249,9 @@ async function handleAddBook(e) {
             // Seamless Redirect: Use the userbook_id returned by Django to route instantly
             setTimeout(() => {
                 window.location.href = `/api/book/${data.userbook_id}/`;
-            }, 400); // 400ms delay lets the green checkmark flash satisfyingly first
+            }, 400);
             
         } else {
-            // Check if the server explicitly told us the book is already in the library
             if (data.detail && data.detail.includes("already")) {
                 throw new Error("ALREADY_EXISTS");
             }
@@ -223,12 +262,11 @@ async function handleAddBook(e) {
         
         if (error.message === "ALREADY_EXISTS") {
             button.textContent = "In Library";
-            button.style.background = "#3b82f6"; // Noticeable primary blue
+            button.style.background = "#3b82f6";
         } else {
             button.textContent = "Error!";
             button.style.background = "var(--danger)";
             
-            // Reset button on unexpected layout drops so they can try again
             setTimeout(() => {
                 button.textContent = "Add to Library";
                 button.disabled = false;

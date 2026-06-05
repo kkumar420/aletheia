@@ -4,6 +4,8 @@ let selectedStatus = "ALL";   // Track active tab category link
 let selectedTags = new Set(); // Track multiple active tag filters simultaneously
 let currentView = "grid";
 let searchQuery = "";
+let sortProperty = "date_added";
+let sortDirection = "desc";
 
 // --- API Fetch Wrapper ---
 async function apiFetch(url, options = {}) {
@@ -60,6 +62,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     setupFiltersAndSortSuite();
+    setupSortPopover();
+    setupClearTags();
     await loadLibraryData();
 
     // Check query redirects
@@ -123,9 +127,70 @@ function generateTagShelves() {
                 e.target.classList.add("active");
             }
             
+            updateClearTagsVisibility();
             applyFiltersAndSorts(); 
         });
     });
+}
+
+// --- Sort Popover Logic ---
+function setupSortPopover() {
+    const trigger = document.getElementById("sort-trigger-btn");
+    const popover = document.getElementById("sort-popover");
+    if (!trigger || !popover) return;
+
+    // Toggle popover open/close
+    trigger.addEventListener("click", (e) => {
+        e.stopPropagation();
+        popover.classList.toggle("is-open");
+    });
+
+    // Close on outside click
+    document.addEventListener("click", (e) => {
+        if (!popover.contains(e.target) && !trigger.contains(e.target)) {
+            popover.classList.remove("is-open");
+        }
+    });
+
+    // Sort property options
+    popover.querySelectorAll(".sort-popover__option").forEach(opt => {
+        opt.addEventListener("click", () => {
+            popover.querySelectorAll(".sort-popover__option").forEach(o => o.classList.remove("is-active"));
+            opt.classList.add("is-active");
+            sortProperty = opt.getAttribute("data-sort");
+            applyFiltersAndSorts();
+        });
+    });
+
+    // Direction toggles
+    popover.querySelectorAll(".sort-popover__dir").forEach(btn => {
+        btn.addEventListener("click", () => {
+            popover.querySelectorAll(".sort-popover__dir").forEach(b => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            sortDirection = btn.getAttribute("data-dir");
+            applyFiltersAndSorts();
+        });
+    });
+}
+
+// --- Clear Tags Button ---
+function setupClearTags() {
+    const clearBtn = document.getElementById("clear-tags-btn");
+    if (!clearBtn) return;
+
+    clearBtn.addEventListener("click", () => {
+        selectedTags.clear();
+        document.querySelectorAll(".shelf-toggle.active").forEach(btn => btn.classList.remove("active"));
+        updateClearTagsVisibility();
+        applyFiltersAndSorts();
+    });
+}
+
+function updateClearTagsVisibility() {
+    const clearBtn = document.getElementById("clear-tags-btn");
+    if (clearBtn) {
+        clearBtn.classList.toggle("is-visible", selectedTags.size > 0);
+    }
 }
 
 // --- Event Listeners ---
@@ -134,25 +199,6 @@ function setupFiltersAndSortSuite() {
         searchQuery = e.target.value.toLowerCase().trim();
         applyFiltersAndSorts();
     });
-
-    document.getElementById("sort-property").addEventListener("change", () => {
-        applyFiltersAndSorts(); 
-    });
-
-    const dirBtn = document.getElementById("sort-direction-btn");
-    if (dirBtn) {
-        dirBtn.addEventListener("click", () => {
-            const currentDir = dirBtn.getAttribute("data-dir");
-            if (currentDir === "desc") {
-                dirBtn.setAttribute("data-dir", "asc");
-                dirBtn.textContent = "Ascending ↑";
-            } else {
-                dirBtn.setAttribute("data-dir", "desc");
-                dirBtn.textContent = "Descending ↓";
-            }
-            applyFiltersAndSorts();
-        });
-    }
 
     const statusItems = document.querySelectorAll(".status-item");
     statusItems.forEach(item => {
@@ -171,7 +217,6 @@ function applyFiltersAndSorts() {
     let processedBooks = allBooksData.filter(book => {
         const matchesStatus = (selectedStatus === "ALL" || book.status === selectedStatus);
         
-        // CORRECTION: Read directly from book.title parameter key
         const matchesSearch = (searchQuery === "" || 
             (book.title && book.title.toLowerCase().includes(searchQuery)) || 
             (book.author && book.author.toLowerCase().includes(searchQuery))
@@ -195,8 +240,9 @@ function applyFiltersAndSorts() {
         return matchesStatus && matchesSearch && matchesTags;
     });
 
-    const property = document.getElementById("sort-property").value;
-    const direction = document.getElementById("sort-direction-btn").getAttribute("data-dir");
+    // Read sort state from internal variables (not DOM)
+    const property = sortProperty;
+    const direction = sortDirection;
 
     processedBooks.sort((a, b) => {
         let valA, valB;
@@ -272,14 +318,13 @@ function renderBooks(books) {
         const statusLabel = getStatusLabel(book.status);
         const tagsHtml = book.tags ? book.tags.map(tag => `<span class="tag-chip">#${tag.name}</span>`).join("") : "";
 
-        // CORRECTION: book.title evaluated cleanly
         if (currentView === "grid") {
             card.innerHTML = `
                 <img src="${coverImage}" class="book-cover" alt="Cover">
                 <div class="book-info">
                     <div class="book-title">${book.title}</div>
                     <div class="book-author">
-                        <span class="author-link" style="cursor: pointer; color: var(--accent); font-weight: 500;">${author}</span>
+                        <span class="author-link">${author}</span>
                     </div>
                     <div class="book-status">${statusLabel}</div>
                     <div class="book-tags">${tagsHtml}</div>
@@ -289,7 +334,7 @@ function renderBooks(books) {
                 <img src="${coverImage}" class="list-cover" alt="Cover">
                 <div class="list-title">${book.title}</div>
                 <div class="list-author">
-                    <span class="author-link" style="cursor: pointer; color: var(--accent); font-weight: 500;">${author}</span>
+                    <span class="author-link">${author}</span>
                 </div>
                 <div class="list-status">${statusLabel}</div>
                 <div class="list-tags">${tagsHtml}</div>`;

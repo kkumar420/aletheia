@@ -1,6 +1,19 @@
+// --- Password Cache Guard ---
+// Clears the password field whenever the page is visited or restored from BFCache
+window.addEventListener("pageshow", function(e) {
+    const passwordInput = document.getElementById("password");
+    if (passwordInput) passwordInput.value = "";
+});
+
+// --- Initialization ---
 document.addEventListener("DOMContentLoaded", () => {
+    // If already authenticated, skip login and go straight to dashboard
+    if (localStorage.getItem("access")) {
+        window.location.replace("/api/");
+        return;
+    }
+
     // 1. DOM Elements
-    // Grab the form and error message elements as soon as the page loads
     const form = document.getElementById("login-form");
     const errorMessage = document.getElementById("error-message");
 
@@ -33,23 +46,20 @@ document.addEventListener("DOMContentLoaded", () => {
             // 4. Success Handling
             if (response.ok) {
                 // Store the JWT tokens in the browser's local storage
-                // 'access' is used for short-term API requests; 'refresh' gets new access tokens
                 localStorage.setItem("access", data.access);
                 localStorage.setItem("refresh", data.refresh);
 
                 // Redirect the user to the main dashboard
-                window.location.href = "/api/";
+                window.location.replace("/api/");
             } 
             // 5. Server Error Handling (e.g., wrong password)
             else {
-                // Display the specific error from the backend, or a generic message
                 errorMessage.textContent = data.detail || "Login failed. Please check your credentials.";
                 errorMessage.style.display = "block";
             }
 
         } catch (error) {
             // 6. Network Error Handling
-            // This catches issues like the server being down or no internet connection
             console.error("Login Error:", error);
             errorMessage.textContent = "Network error. Please try again later.";
             errorMessage.style.display = "block";
