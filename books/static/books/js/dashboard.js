@@ -547,14 +547,15 @@ function renderBooks(books) {
         card.addEventListener("click", (e) => {
             if (e.target.classList.contains("author-link") || 
                 e.target.classList.contains("book-card__check") || 
-                e.target.classList.contains("book-row__check")) return;
+                e.target.classList.contains("book-row__check") ||
+                e.target.classList.contains("tag-chip")) return;
             window.location.href = `/api/book/${book.id}/`;
         });
 
         const coverImage = book.cover_image || "/static/books/images/book-placeholder.png";
         const author = book.author || "Unknown Author";
         const statusLabel = getStatusLabel(book.status);
-        const tagsHtml = book.tags ? book.tags.map(tag => `<span class="tag-chip">#${tag.name}</span>`).join("") : "";
+        const tagsHtml = book.tags ? book.tags.map(tag => `<span class="tag-chip" data-tag="${tag.name}">#${tag.name}</span>`).join("") : "";
 
         if (currentView === "grid") {
             card.innerHTML = `
@@ -600,6 +601,23 @@ function renderBooks(books) {
             if (searchInput) {
                 searchInput.value = authorName; 
                 searchQuery = authorName.toLowerCase();
+                applyFiltersAndSorts();
+            }
+        });
+    });
+
+    // Bind tag chips
+    container.querySelectorAll(".tag-chip").forEach(tag => {
+        tag.addEventListener("click", (e) => {
+            const tagName = e.target.getAttribute("data-tag");
+            if (!selectedTags.has(tagName)) {
+                selectedTags.add(tagName);
+                
+                // Update UI visually
+                const shelfToggles = document.querySelectorAll(`.shelf-toggle[data-tag="${tagName}"]`);
+                shelfToggles.forEach(btn => btn.classList.add("active"));
+                updateClearTagsVisibility();
+                
                 applyFiltersAndSorts();
             }
         });

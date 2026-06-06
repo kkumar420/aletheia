@@ -1814,6 +1814,18 @@ body.light-theme .book-row:hover {
     background: rgba(0, 0, 0, 0.04);
 }
 
+/* Light-mode tag chips */
+body.light-theme .tag-chip {
+    border: 1px solid #cbd5e1;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .tag-chip:hover {
+    border-color: var(--accent);
+    background: rgba(0, 0, 0, 0.06);
+}
+
 /* Light-mode stat cards */
 body.light-theme .stat-card {
     background: rgba(0, 0, 0, 0.02);
