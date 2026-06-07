@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 import os
 import dj_database_url
 from dotenv import load_dotenv
@@ -22,7 +23,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-### --- CHANGED FOR PRODUCTION: SECURITY SETTINGS --- ###
+### --- SECURITY SETTINGS --- ###
 # We now pull these from Render's Environment Variables so hackers can't see them on GitHub.
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure--n8ni-ylanm%l(f5=3j02e&1%$j^5sl5rgbum*%j0uz@3cwji#')
 
@@ -34,7 +35,25 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(','
 
 # Tells Django to trust form submissions coming from your Render/Custom URL
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
-### ------------------------------------------------- ###
+
+### --- PRODUCTION SECURITY HEADERS --- ###
+# These only take effect when DEBUG=False (i.e., on Render).
+if not DEBUG:
+    # Tells Django it's behind Render's HTTPS reverse proxy
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Forces all cookies to be sent over HTTPS only
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # Redirects any accidental HTTP requests to HTTPS
+    SECURE_SSL_REDIRECT = True
+
+    # Tells browsers to only connect via HTTPS for this many seconds
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+### ---------------------------------- ###
 
 
 # Application definition
@@ -56,10 +75,11 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     
-    ### --- CHANGED FOR PRODUCTION: WHITENOISE --- ###
-    # This must be directly below SecurityMiddleware to serve your CSS/JS extremely fast
+    ### --- WHITENOISE --- ###
+    # This must be directly below SecurityMiddleware to serve your CSS/JS extremely fast.
+    # WhiteNoise serves pre-collected static files from STATIC_ROOT in production.
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    ### ------------------------------------------ ###
+    ### ------------------- ###
     
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -92,7 +112,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-### --- CHANGED FOR PRODUCTION: DATABASE --- ###
+### --- DATABASE --- ###
 # Connects to Render's PostgreSQL using the DATABASE_URL. 
 # Falls back to SQLite locally if the URL isn't found.
 DATABASES = {
@@ -102,7 +122,7 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
-### ---------------------------------------- ###
+### ---------------- ###
 
 
 # Password validation
@@ -136,39 +156,50 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
+# ==========================================================
+# STATIC FILES (CSS, JavaScript, Images)
+# ==========================================================
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
-### --- CHANGED FOR PRODUCTION: STATIC ROOT --- ###
 # This tells Django exactly where to pack all your files when Render runs collectstatic
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-### ------------------------------------------- ###
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# COMPLETELY SAFE
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
-
-# The modern Django way to handle file storage (Media to Cloudinary, Static to Default)
+# The modern Django STORAGES dict (Django 4.2+)
+# - "default" handles media files (user uploads → Cloudinary)
+# - "staticfiles" handles CSS/JS/images (collected → served by WhiteNoise)
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # Uses Django's bulletproof default storage to bypass the WhiteNoise race condition
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage", 
+        # Uses Django's default storage to bypass the WhiteNoise
+        # CompressedManifest race condition with Django admin files.
+        # WhiteNoise middleware still serves from STATIC_ROOT efficiently.
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
-# The legacy variable left here explicitly to prevent the Cloudinary package from crashing
+
+# ==========================================================
+# MEDIA FILES (User Uploads → Cloudinary)
+# ==========================================================
+
+# Cloudinary handles all media in production (ephemeral storage disappears on redeploy).
+# MEDIA_URL and MEDIA_ROOT are only used locally for dev convenience.
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+# ==========================================================
+# REST FRAMEWORK & JWT
+# ==========================================================
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
@@ -179,3 +210,13 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+}
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

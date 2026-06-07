@@ -68,12 +68,16 @@ class UserbookSerializer(serializers.ModelSerializer):
     def get_cover_image(self, obj):
         request = self.context.get('request')
         if obj.custom_cover:
-            return request.build_absolute_uri(obj.custom_cover.url) if request else obj.custom_cover.url
+            url = obj.custom_cover.url
+            # Cloudinary returns absolute URLs; only build_absolute_uri for local files
+            if url.startswith('http'):
+                return url
+            return request.build_absolute_uri(url) if request else url
         if obj.book.cover_image:
-            cover_str = str(obj.book.cover_image)
-            if cover_str.startswith('http'):
-                return cover_str
-            return request.build_absolute_uri(obj.book.cover_image.url) if request else obj.book.cover_image.url
+            url = obj.book.cover_image.url
+            if url.startswith('http'):
+                return url
+            return request.build_absolute_uri(url) if request else url
         return ""
 
     # Override the save behavior to intercept the tags
@@ -135,12 +139,15 @@ class UserBookDashboardSerializer(serializers.ModelSerializer):
     def get_cover_image(self, obj):
         request = self.context.get('request')
         if obj.custom_cover:
-            return request.build_absolute_uri(obj.custom_cover.url) if request else obj.custom_cover.url
+            url = obj.custom_cover.url
+            if url.startswith('http'):
+                return url
+            return request.build_absolute_uri(url) if request else url
         if obj.book.cover_image:
-            cover_str = str(obj.book.cover_image)
-            if cover_str.startswith('http'):
-                return cover_str
-            return request.build_absolute_uri(obj.book.cover_image.url) if request else obj.book.cover_image.url
+            url = obj.book.cover_image.url
+            if url.startswith('http'):
+                return url
+            return request.build_absolute_uri(url) if request else url
         return ""
 
 class RegisterSerializer(serializers.ModelSerializer):
