@@ -156,20 +156,19 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-# The modern Django way to handle file storage (Media to Cloudinary, Static to WhiteNoise)
+# The modern Django way to handle file storage (Media to Cloudinary, Static to Default)
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # REMOVED "Manifest" FROM THIS LINE
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage", 
+        # Uses Django's bulletproof default storage to bypass the WhiteNoise race condition
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage", 
     },
 }
 
 # The legacy variable left here explicitly to prevent the Cloudinary package from crashing
-# REMOVED "Manifest" FROM THIS LINE AS WELL
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
