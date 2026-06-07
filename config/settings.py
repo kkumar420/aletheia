@@ -15,23 +15,26 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 
-# This tells Django to look inside your secret .env file
+# This tells Django to look inside your secret .env file locally
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+### --- CHANGED FOR PRODUCTION: SECURITY SETTINGS --- ###
+# We now pull these from Render's Environment Variables so hackers can't see them on GitHub.
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure--n8ni-ylanm%l(f5=3j02e&1%$j^5sl5rgbum*%j0uz@3cwji#')
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure--n8ni-ylanm%l(f5=3j02e&1%$j^5sl5rgbum*%j0uz@3cwji#'
+# Turns off the yellow error screens in production
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Tells Django which URLs are allowed to access this server
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
-ALLOWED_HOSTS = []
+# Tells Django to trust form submissions coming from your Render/Custom URL
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
+### ------------------------------------------------- ###
 
 
 # Application definition
@@ -50,6 +53,12 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    
+    ### --- CHANGED FOR PRODUCTION: WHITENOISE --- ###
+    # This must be directly below SecurityMiddleware to serve your CSS/JS extremely fast
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    ### ------------------------------------------ ###
+    
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,15 +90,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-# We use the URL from the .env file. If it can't find it (like during a build process), 
-# it falls back to a temporary SQLite file so the server doesn't crash.
+### --- CHANGED FOR PRODUCTION: DATABASE --- ###
+# Connects to Render's PostgreSQL using the DATABASE_URL. 
+# Falls back to SQLite locally if the URL isn't found.
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL', f'sqlite:///{BASE_DIR}/db.sqlite3'),
@@ -97,6 +100,8 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
+### ---------------------------------------- ###
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -133,6 +138,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+### --- CHANGED FOR PRODUCTION: STATIC ROOT --- ###
+# This tells Django exactly where to pack all your files when Render runs collectstatic
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+### ------------------------------------------- ###
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
