@@ -162,15 +162,14 @@ STORAGES = {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # REMOVED "Manifest" FROM THIS LINE
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage", 
     },
 }
 
 # The legacy variable left here explicitly to prevent the Cloudinary package from crashing
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-### ------------------------------------------ ###
-# Tell WhiteNoise not to crash if it can't find a file referenced in third-party CSS
-WHITENOISE_MANIFEST_STRICT = False
+# REMOVED "Manifest" FROM THIS LINE AS WELL
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
