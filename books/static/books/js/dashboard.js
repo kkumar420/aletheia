@@ -556,6 +556,7 @@ function renderBooks(books) {
         const author = book.author || "Unknown Author";
         const statusLabel = getStatusLabel(book.status);
         const tagsHtml = book.tags ? book.tags.map(tag => `<span class="tag-chip" data-tag="${tag.name}">#${tag.name}</span>`).join("") : "";
+        const ratingHtml = book.rating ? `<div class="book-rating">⭐ ${book.rating}/5</div>` : "";
 
         if (currentView === "grid") {
             card.innerHTML = `
@@ -567,6 +568,7 @@ function renderBooks(books) {
                         <span class="author-link">${author}</span>
                     </div>
                     <div class="book-status">${statusLabel}</div>
+                    ${ratingHtml}
                     <div class="book-tags">${tagsHtml}</div>
                 </div>`;
         } else {
@@ -578,6 +580,7 @@ function renderBooks(books) {
                     <span class="author-link">${author}</span>
                 </div>
                 <div class="list-status">${statusLabel}</div>
+                ${ratingHtml}
                 <div class="list-tags">${tagsHtml}</div>`;
         }
         container.appendChild(card);
