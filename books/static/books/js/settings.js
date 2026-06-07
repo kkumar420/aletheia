@@ -8,8 +8,8 @@ async function apiFetch(url, options = {}) {
     if (response.status === 401) {
         // ... (Your standard token refresh logic here, identical to your other files) ...
         const refreshToken = localStorage.getItem("refresh");
-        if (!refreshToken) { window.location.replace("/api/login-page/"); return response; }
-        const refreshResponse = await fetch("/api/token/refresh/", {
+        if (!refreshToken) { window.location.replace("/login-page/"); return response; }
+        const refreshResponse = await fetch("/token/refresh/", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh: refreshToken })
         });
@@ -20,7 +20,7 @@ async function apiFetch(url, options = {}) {
             response = await fetch(url, options);
         } else {
             localStorage.removeItem("access"); localStorage.removeItem("refresh");
-            window.location.replace("/api/login-page/");
+            window.location.replace("/login-page/");
         }
     }
     return response;
@@ -29,7 +29,7 @@ async function apiFetch(url, options = {}) {
 document.addEventListener("DOMContentLoaded", async () => {
     // 1. Check Authentication
     if (!localStorage.getItem("access")) {
-        window.location.replace("/api/login-page/");
+        window.location.replace("/login-page/");
         return;
     }
 
@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.removeItem("refresh");
         
         // Redirect to login
-        window.location.replace("/api/login-page/");
+        window.location.replace("/login-page/");
     });
 
     // 4. Fetch and Calculate Metrics
@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function fetchMetrics() {
     try {
         // We reuse the existing userbooks endpoint to calculate metrics
-        const response = await apiFetch("/api/userbooks/");
+        const response = await apiFetch("/userbooks/");
         if (!response.ok) throw new Error("Failed to fetch books");
         
         const books = await response.json();

@@ -12,11 +12,11 @@ async function apiFetch(url, options = {}) {
     if (response.status === 401) {
         const refreshToken = localStorage.getItem("refresh");
         if (!refreshToken) {
-            window.location.replace("/api/login-page/");
+            window.location.replace("/login-page/");
             return response;
         }
 
-        const refreshResponse = await fetch("/api/token/refresh/", {
+        const refreshResponse = await fetch("/token/refresh/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh: refreshToken })
@@ -30,7 +30,7 @@ async function apiFetch(url, options = {}) {
         } else {
             localStorage.removeItem("access");
             localStorage.removeItem("refresh");
-            window.location.replace("/api/login-page/");
+            window.location.replace("/login-page/");
         }
     }
     return response;
@@ -104,7 +104,7 @@ function toggleEditDetails() {
 // --- Data Fetching ---
 async function fetchAndPopulateData() {
     try {
-        const response = await apiFetch(`/api/userbooks/${CURRENT_BOOK_ID}/`);
+        const response = await apiFetch(`/userbooks/${CURRENT_BOOK_ID}/`);
         if (!response.ok) throw new Error("Failed to fetch book data");
         
         const data = await response.json();
@@ -117,7 +117,7 @@ async function fetchAndPopulateData() {
             const authorName = data.author || "Unknown Author";
             authorEl.textContent = authorName;
             if (data.author) {
-                authorEl.href = `/api/?author=${encodeURIComponent(authorName)}`;
+                authorEl.href = `/?author=${encodeURIComponent(authorName)}`;
             } else {
                 authorEl.style.pointerEvents = "none";
             }
@@ -204,7 +204,7 @@ async function handleAddTag() {
 
 async function syncTags() {
     try {
-        const response = await apiFetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
+        const response = await apiFetch(`/userbooks/${CURRENT_BOOK_ID}/`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ tag_names: currentTags })
@@ -235,7 +235,7 @@ async function handleSaveDetails() {
 
     try {
         const token = localStorage.getItem("access");
-        const response = await fetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
+        const response = await fetch(`/userbooks/${CURRENT_BOOK_ID}/`, {
             method: "PATCH",
             headers: { "Authorization": `Bearer ${token}` },
             body: formData
@@ -287,7 +287,7 @@ async function handleFormSubmit(e) {
     let redirecting = false;
 
     try {
-        const response = await apiFetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
+        const response = await apiFetch(`/userbooks/${CURRENT_BOOK_ID}/`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -296,7 +296,7 @@ async function handleFormSubmit(e) {
         if (response.ok) {
             redirecting = true;
             submitBtn.textContent = "Saved ✓";
-            setTimeout(() => { window.location.href = "/api/"; }, 600);
+            setTimeout(() => { window.location.href = "/"; }, 600);
         } else {
             const errData = await response.json();
             throw new Error(errData.detail || "Failed to save changes");
@@ -331,7 +331,7 @@ async function handleEbookUpload() {
 
     try {
         const token = localStorage.getItem("access");
-        const response = await fetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, {
+        const response = await fetch(`/userbooks/${CURRENT_BOOK_ID}/`, {
             method: "PATCH",
             headers: { "Authorization": `Bearer ${token}` },
             body: formData
@@ -372,10 +372,10 @@ async function handleDeleteBook() {
     deleteBtn.textContent = "Removing...";
 
     try {
-        const response = await apiFetch(`/api/userbooks/${CURRENT_BOOK_ID}/`, { method: "DELETE" });
+        const response = await apiFetch(`/userbooks/${CURRENT_BOOK_ID}/`, { method: "DELETE" });
 
         if (response.status === 204 || response.ok) {
-            window.location.replace("/api/");
+            window.location.replace("/");
         } else {
             throw new Error("Deletion failed");
         }

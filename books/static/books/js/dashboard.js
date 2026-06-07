@@ -18,11 +18,11 @@ async function apiFetch(url, options = {}) {
     if (response.status === 401) {
         const refreshToken = localStorage.getItem("refresh");
         if (!refreshToken) {
-            window.location.replace("/api/login-page/");
+            window.location.replace("/login-page/");
             return response;
         }
 
-        const refreshResponse = await fetch("/api/token/refresh/", {
+        const refreshResponse = await fetch("/token/refresh/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh: refreshToken })
@@ -36,7 +36,7 @@ async function apiFetch(url, options = {}) {
         } else {
             localStorage.removeItem("access");
             localStorage.removeItem("refresh");
-            window.location.replace("/api/login-page/");
+            window.location.replace("/login-page/");
         }
     }
     return response;
@@ -45,20 +45,20 @@ async function apiFetch(url, options = {}) {
 // --- Initialization Block ---
 document.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem("access");
-    if (!token) { window.location.replace("/api/login-page/"); return; }
+    if (!token) { window.location.replace("/login-page/"); return; }
 
     // Layout view toggles
     document.getElementById("grid-view-btn").addEventListener("click", () => switchView("grid"));
     document.getElementById("list-view-btn").addEventListener("click", () => switchView("list"));
     
     document.getElementById("settings-btn").addEventListener("click", () => {
-        window.location.href = "/api/settings-page/";
+        window.location.href = "/settings-page/";
     });
 
     const addBookBtn = document.getElementById("add-book-btn");
     if (addBookBtn) {
         addBookBtn.addEventListener("click", () => {
-            window.location.href = "/api/add-book-page/";
+            window.location.href = "/add-book-page/";
         });
     }
 
@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 // --- Fetch Library Data ---
 async function loadLibraryData() {
     try {
-        const response = await apiFetch("/api/userbooks/");
+        const response = await apiFetch("/userbooks/");
         if (!response.ok) throw new Error("Failed to load books");
         
         allBooksData = await response.json();
@@ -253,7 +253,7 @@ async function handleBulkDelete() {
     deleteBtn.textContent = "Deleting...";
 
     try {
-        const response = await apiFetch("/api/userbooks/bulk-delete/", {
+        const response = await apiFetch("/userbooks/bulk-delete/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ids: Array.from(selectedBookIds) })
@@ -304,7 +304,7 @@ async function openTagManager() {
 
     // Fetch all tags from the API (gives us IDs needed for deletion)
     try {
-        const response = await apiFetch("/api/tags/");
+        const response = await apiFetch("/tags/");
         if (!response.ok) throw new Error("Failed to fetch tags");
         const tags = await response.json();
 
@@ -353,7 +353,7 @@ async function handleDeleteTag(tagId, tagName) {
     if (!confirmed) return;
 
     try {
-        const response = await apiFetch(`/api/tags/${tagId}/`, { method: "DELETE" });
+        const response = await apiFetch(`/tags/${tagId}/`, { method: "DELETE" });
 
         if (response.ok || response.status === 204) {
             // Remove from local data
@@ -549,7 +549,7 @@ function renderBooks(books) {
                 e.target.classList.contains("book-card__check") || 
                 e.target.classList.contains("book-row__check") ||
                 e.target.classList.contains("tag-chip")) return;
-            window.location.href = `/api/book/${book.id}/`;
+            window.location.href = `/book/${book.id}/`;
         });
 
         const coverImage = book.cover_image || "/static/books/images/book-placeholder.png";

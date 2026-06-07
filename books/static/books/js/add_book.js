@@ -13,8 +13,8 @@ async function apiFetch(url, options = {}) {
 
     if (response.status === 401) {
         const refreshToken = localStorage.getItem("refresh");
-        if (!refreshToken) { window.location.replace("/api/login-page/"); return response; }
-        const refreshResponse = await fetch("/api/token/refresh/", {
+        if (!refreshToken) { window.location.replace("/login-page/"); return response; }
+        const refreshResponse = await fetch("/token/refresh/", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh: refreshToken })
         });
@@ -25,7 +25,7 @@ async function apiFetch(url, options = {}) {
             response = await fetch(url, options);
         } else {
             localStorage.removeItem("access"); localStorage.removeItem("refresh");
-            window.location.replace("/api/login-page/");
+            window.location.replace("/login-page/");
         }
     }
     return response;
@@ -198,7 +198,7 @@ async function handleManualAdd(e) {
 
     try {
         const token = localStorage.getItem("access");
-        const response = await fetch("/api/manual-add-book/", {
+        const response = await fetch("/manual-add-book/", {
             method: "POST",
             headers: { "Authorization": `Bearer ${token}` },
             body: formData
@@ -209,7 +209,7 @@ async function handleManualAdd(e) {
         if (response.ok) {
             submitBtn.textContent = "Added ✓";
             setTimeout(() => {
-                window.location.href = `/api/book/${data.userbook_id}/`;
+                window.location.href = `/book/${data.userbook_id}/`;
             }, 400);
         } else {
             throw new Error(data.error || "Failed to add book");
@@ -261,7 +261,7 @@ async function performSearch(searchParams, page) {
     }
 
     try {
-        const response = await apiFetch(`/api/search-openlibrary/?${searchParams}&page=${page}`);
+        const response = await apiFetch(`/search-openlibrary/?${searchParams}&page=${page}`);
         if (!response.ok) throw new Error("Search proxy returned error status.");
         const data = await response.json();
         renderResults(data, page);
@@ -357,7 +357,7 @@ async function handleAddBook(e) {
     button.style.background = "#64748b";
 
     try {
-        const response = await apiFetch(`/api/add-book/`, {
+        const response = await apiFetch(`/add-book/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(bookData)
@@ -369,7 +369,7 @@ async function handleAddBook(e) {
             button.textContent = "Added ✓";
             button.style.background = "#10b981";
             setTimeout(() => {
-                window.location.href = `/api/book/${data.userbook_id}/`;
+                window.location.href = `/book/${data.userbook_id}/`;
             }, 400);
         } else {
             if (data.detail && data.detail.includes("already")) {

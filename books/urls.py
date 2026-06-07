@@ -13,8 +13,6 @@ router.register(r'tags', TagViewSet, basename='tags')
 
 urlpatterns = [
     path('register/', RegisterView.as_view()),
-    # path('login/', LoginView.as_view()),
-    # path('logout/', LogoutView.as_view()),
     path('search-openlibrary/', OpenLibrarySearchView.as_view()),
     path('add-book/', AddBookView.as_view()),
     path('', dashboard, name='dashboard'),

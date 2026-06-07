@@ -5,5 +5,5 @@ function logout() {
 
     // 2. Use replace() instead of href so the login page replaces the current
     //    history entry — pressing "Back" can't return to the protected page
-    window.location.replace("/api/login-page/");
+    window.location.replace("/login-page/");
 }

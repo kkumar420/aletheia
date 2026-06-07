@@ -37,9 +37,9 @@
         window.addEventListener("pageshow", function(e) {
             // Fires on normal load AND on BFCache restore (e.persisted === true)
             // Only guard pages that aren't the login/register pages themselves
-            if (window.location.pathname !== "/api/login-page/" && window.location.pathname !== "/api/register-page/") {
+            if (window.location.pathname !== "/login-page/" && window.location.pathname !== "/register-page/") {
                 if (!localStorage.getItem("access")) {
-                    window.location.replace("/api/login-page/");
+                    window.location.replace("/login-page/");
                 }
             }
         });

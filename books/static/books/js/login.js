@@ -9,7 +9,7 @@ window.addEventListener("pageshow", function(e) {
 document.addEventListener("DOMContentLoaded", () => {
     // If already authenticated, skip login and go straight to dashboard
     if (localStorage.getItem("access")) {
-        window.location.replace("/api/");
+        window.location.replace("/");
         return;
     }
 
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             // 3. API Request
             // Send the credentials to your Django backend's token endpoint
-            const response = await fetch("/api/token/", {
+            const response = await fetch("/token/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("refresh", data.refresh);
 
                 // Redirect the user to the main dashboard
-                window.location.replace("/api/");
+                window.location.replace("/");
             } 
             // 5. Server Error Handling (e.g., wrong password)
             else {

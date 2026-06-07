@@ -11,7 +11,7 @@ window.addEventListener("pageshow", function(e) {
 document.addEventListener("DOMContentLoaded", () => {
     // If already authenticated, skip registration and go straight to dashboard
     if (localStorage.getItem("access")) {
-        window.location.replace("/api/");
+        window.location.replace("/");
         return;
     }
 
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             // 1. Register the user via the DRF endpoint
-            const registerResponse = await fetch("/api/register/", {
+            const registerResponse = await fetch("/register/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, email, password })
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // 2. Auto-login: immediately obtain JWT tokens with the new credentials
-            const tokenResponse = await fetch("/api/token/", {
+            const tokenResponse = await fetch("/token/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password })
@@ -74,10 +74,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("refresh", tokenData.refresh);
 
                 // Go straight to the dashboard — no detour through login
-                window.location.replace("/api/");
+                window.location.replace("/");
             } else {
                 // Account created but auto-login failed — send them to login page
-                window.location.replace("/api/login-page/");
+                window.location.replace("/login-page/");
             }
 
         } catch (error) {
