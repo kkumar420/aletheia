@@ -2,10 +2,10 @@
 let allBooksData = [];
 let selectedStatus = "ALL";
 let selectedTags = new Set();
-let currentView = "grid";
+let currentView = localStorage.getItem("dashboardView") || "grid";
 let searchQuery = "";
-let sortProperty = "date_added";
-let sortDirection = "desc";
+let sortProperty = localStorage.getItem("dashboardSortProp") || "date_added";
+let sortDirection = localStorage.getItem("dashboardSortDir") || "desc";
 let selectedBookIds = new Set(); // Bulk selection tracking
 
 // --- API Fetch Wrapper ---
@@ -50,6 +50,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Layout view toggles
     document.getElementById("grid-view-btn").addEventListener("click", () => switchView("grid"));
     document.getElementById("list-view-btn").addEventListener("click", () => switchView("list"));
+
+    // Set initial view state visually from localStorage
+    const container = document.getElementById("books-container");
+    if (container) container.className = currentView === "grid" ? "books-grid" : "books-list";
+    document.getElementById("grid-view-btn").classList.toggle("active-view", currentView === "grid");
+    document.getElementById("list-view-btn").classList.toggle("active-view", currentView === "list");
     
     document.getElementById("settings-btn").addEventListener("click", () => {
         window.location.href = "/settings-page/";
@@ -155,11 +161,29 @@ function setupSortPopover() {
         }
     });
 
+    // Set initial visual state from localStorage
+    popover.querySelectorAll(".sort-popover__option").forEach(opt => {
+        if (opt.getAttribute("data-sort") === sortProperty) {
+            opt.classList.add("is-active");
+        } else {
+            opt.classList.remove("is-active");
+        }
+    });
+
+    popover.querySelectorAll(".sort-popover__dir").forEach(btn => {
+        if (btn.getAttribute("data-dir") === sortDirection) {
+            btn.classList.add("is-active");
+        } else {
+            btn.classList.remove("is-active");
+        }
+    });
+
     popover.querySelectorAll(".sort-popover__option").forEach(opt => {
         opt.addEventListener("click", () => {
             popover.querySelectorAll(".sort-popover__option").forEach(o => o.classList.remove("is-active"));
             opt.classList.add("is-active");
             sortProperty = opt.getAttribute("data-sort");
+            localStorage.setItem("dashboardSortProp", sortProperty);
             applyFiltersAndSorts();
         });
     });
@@ -169,6 +193,7 @@ function setupSortPopover() {
             popover.querySelectorAll(".sort-popover__dir").forEach(b => b.classList.remove("is-active"));
             btn.classList.add("is-active");
             sortDirection = btn.getAttribute("data-dir");
+            localStorage.setItem("dashboardSortDir", sortDirection);
             applyFiltersAndSorts();
         });
     });
@@ -513,6 +538,7 @@ function applyFiltersAndSorts() {
 
 function switchView(view) {
     currentView = view;
+    localStorage.setItem("dashboardView", view);
     const container = document.getElementById("books-container");
     container.className = view === "grid" ? "books-grid" : "books-list";
     
