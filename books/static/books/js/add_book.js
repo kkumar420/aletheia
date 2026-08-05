@@ -312,7 +312,8 @@ function renderResults(results, page) {
 
         return `
             <div class="book-card flex" style="flex-direction: column;">
-                <img src="${coverImage}" class="book-cover" alt="Cover" style="margin-bottom: 15px;">
+                <img src="${coverImage}" class="book-cover" alt="Cover" style="margin-bottom: 15px;"
+                     onerror="this.onerror=null; this.src='/static/books/images/book-placeholder.png';">
                 <div class="book-info" style="flex: 1; display: flex; flex-direction: column;">
                     <div class="book-title mb-sm">${title}</div>
                     <div class="book-author mb-md">${author}</div>

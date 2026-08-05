@@ -102,6 +102,19 @@ class UserbookViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    def partial_update(self, request, *args, **kwargs):
+        """Override to log any storage/Cloudinary errors on custom_cover uploads."""
+        try:
+            return super().partial_update(request, *args, **kwargs)
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(
+                "Userbook PATCH failed for user '%s', book '%s': %s: %s",
+                request.user, kwargs.get('pk'), type(e).__name__, e
+            )
+            raise  # Re-raise so DRF still returns a proper error response
+
+
     def get_serializer_class(self):
         # Use the lightweight dashboard serializer for list views to speed up load times
         if self.action == 'list':
