@@ -296,15 +296,19 @@ function renderResults(results, page) {
 
     const newCardsHtml = results.map(book => {
         const title = book.title || "Unknown Title";
-        const author = book.author_name || "Unknown Author";
+        const author = book.author_name ? (Array.isArray(book.author_name) ? book.author_name[0] : book.author_name) : "Unknown Author";
         
-        // Priority: cover_i (direct ID) → ISBN (lookup by ISBN) → local placeholder.
+        // OpenLibrary returns isbn and publisher as arrays
+        const primaryIsbn = (book.isbn && book.isbn.length > 0) ? book.isbn[0] : null;
+        const primaryPublisher = (book.publisher && book.publisher.length > 0) ? book.publisher[0] : null;
+
+        // Priority requested: ISBN (lookup by ISBN) → cover_i (direct ID) → local placeholder.
         // ?default=false tells OpenLibrary to return 404 instead of a tiny
         // placeholder gif when no cover exists, so our onerror handler fires cleanly.
-        const coverImage = book.cover_i
-            ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`
-            : book.isbn
-                ? `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg?default=false`
+        const coverImage = primaryIsbn
+            ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-M.jpg?default=false`
+            : book.cover_i
+                ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`
                 : "/static/books/images/book-placeholder.png";
 
 
@@ -312,8 +316,8 @@ function renderResults(results, page) {
             title: title,
             author: author,
             cover_image: coverImage,
-            isbn: book.isbn || "",
-            publisher: book.publisher || ""
+            isbn: primaryIsbn || "",
+            publisher: primaryPublisher || ""
         }));
 
         return `
