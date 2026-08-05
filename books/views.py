@@ -236,7 +236,6 @@ class AddBookView(APIView):
             book = Book.objects.filter(isbn=isbn).first()
         elif author:
             book = Book.objects.filter(title=title, authors=author).first()
-
         # If it doesn't exist, create it globally
         if not book:
             book = Book.objects.create(
@@ -247,29 +246,28 @@ class AddBookView(APIView):
             if author:
                 book.authors.add(author)
 
-            # Download and cache the cover image to Cloudinary.
-            # Timeout is generous (20s) to handle slow OpenLibrary + Cloudinary
-            # upload chains on Render's free tier.
-            # The broad except ensures any failure (network, Cloudinary, Pillow)
-            # degrades gracefully — the book is saved without a cover rather
-            # than the whole request crashing.
-            if cover_image_url and 'openlibrary.org' in cover_image_url:
-                try:
-                    img_response = requests.get(
-                        cover_image_url,
-                        timeout=20,
-                        headers={"User-Agent": "Aletheia/1.0 (personal library app)"}
-                    )
-                    if img_response.status_code == 200 and len(img_response.content) > 1000:
-                        safe_title = title[:30].replace(' ', '_').replace('/', '-')
-                        filename = f"cover_{safe_title}.jpg"
-                        cover_file = ContentFile(img_response.content, name=filename)
-                        book.cover_image.save(filename, cover_file, save=True)
-                except Exception as e:
-                    logging.getLogger(__name__).error(
-                        "Cover upload failed for '%s': %s: %s",
-                        title, type(e).__name__, e
-                    )
+        # Download and cache the cover image to Cloudinary.
+        # Runs for BOTH new books AND pre-existing books that have no cover yet
+        # (e.g. books added when Cloudinary was misconfigured get backfilled here).
+        # Timeout is generous (20s) to handle slow OpenLibrary + Cloudinary chains.
+        # The broad except ensures any failure degrades gracefully.
+        if not book.cover_image and cover_image_url and 'openlibrary.org' in cover_image_url:
+            try:
+                img_response = requests.get(
+                    cover_image_url,
+                    timeout=20,
+                    headers={"User-Agent": "Aletheia/1.0 (personal library app)"}
+                )
+                if img_response.status_code == 200 and len(img_response.content) > 1000:
+                    safe_title = title[:30].replace(' ', '_').replace('/', '-')
+                    filename = f"cover_{safe_title}.jpg"
+                    cover_file = ContentFile(img_response.content, name=filename)
+                    book.cover_image.save(filename, cover_file, save=True)
+            except Exception as e:
+                logging.getLogger(__name__).error(
+                    "Cover upload failed for '%s': %s: %s",
+                    title, type(e).__name__, e
+                )
 
         # Link the global Book to the specific User
         userbook, created = Userbook.objects.get_or_create(
