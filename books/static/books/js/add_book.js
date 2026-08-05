@@ -309,13 +309,21 @@ function renderResults(results, page) {
         const isbnUrl = primaryIsbn ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-M.jpg?default=false` : "";
         const placeholderUrl = "/static/books/images/book-placeholder.png";
 
-        const initialSrc = coverIdUrl || isbnUrl || placeholderUrl;
+        // Ultimate Priority: Local DB Cover → cover_i (direct ID) → ISBN (lookup by ISBN) → placeholder.
+        const localCoverUrl = book.local_cover || "";
+        const initialSrc = localCoverUrl || coverIdUrl || isbnUrl || placeholderUrl;
         
         // Build the onerror chain. If the first image fails, we want to try the next one,
         // and finally the placeholder.
         let onErrorChain = `this.onerror=null; this.src='${placeholderUrl}';`;
-        if (coverIdUrl && isbnUrl) {
-            // When coverIdUrl fails, set fallback onerror to placeholder, then switch src to isbnUrl
+        
+        if (localCoverUrl && coverIdUrl && isbnUrl) {
+            onErrorChain = `this.onerror=function(){ this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${isbnUrl}'; }; this.src='${coverIdUrl}';`;
+        } else if (localCoverUrl && coverIdUrl) {
+            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${coverIdUrl}';`;
+        } else if (localCoverUrl && isbnUrl) {
+            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${isbnUrl}';`;
+        } else if (coverIdUrl && isbnUrl) {
             onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${isbnUrl}';`;
         }
 

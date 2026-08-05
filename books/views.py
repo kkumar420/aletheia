@@ -192,14 +192,30 @@ class OpenLibrarySearchView(APIView):
             )
 
         results = []
-        for book in data.get("docs", []):
+        for book_data in data.get("docs", []):
+            title = book_data.get("title")
+            isbn = book_data.get("isbn", [None])[0]
+            author_name = book_data.get("author_name", [None])[0]
+            
+            # Check local DB for existing cover to avoid relying on flaky OpenLibrary covers
+            local_cover = None
+            if isbn:
+                local_book = Book.objects.filter(isbn=isbn).first()
+                if local_book and local_book.cover_image:
+                    local_cover = local_book.cover_image.url
+            if not local_cover and title and author_name:
+                local_book = Book.objects.filter(title=title, authors__name=author_name).first()
+                if local_book and local_book.cover_image:
+                    local_cover = local_book.cover_image.url
+
             results.append({
-                "title": book.get("title"),
-                "author_name": book.get("author_name", [None])[0],
-                "publisher": book.get("publisher", [None])[0],
-                "isbn": book.get("isbn", [None])[0],
-                "cover_i": book.get("cover_i"),
-                "key": book.get("key")
+                "title": title,
+                "author_name": author_name,
+                "publisher": book_data.get("publisher", [None])[0],
+                "isbn": isbn,
+                "cover_i": book_data.get("cover_i"),
+                "key": book_data.get("key"),
+                "local_cover": local_cover
             })
 
         return Response(results)
