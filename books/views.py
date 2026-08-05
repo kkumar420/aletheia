@@ -233,17 +233,25 @@ class AddBookView(APIView):
             if author:
                 book.authors.add(author)
 
-            # Download and cache the cover image locally
+            # Download and cache the cover image to Cloudinary.
+            # Timeout is generous (20s) to handle slow OpenLibrary + Cloudinary
+            # upload chains on Render's free tier.
+            # The broad except ensures any failure (network, Cloudinary, Pillow)
+            # degrades gracefully — the book is saved without a cover rather
+            # than the whole request crashing.
             if cover_image_url and 'openlibrary.org' in cover_image_url:
                 try:
-                    img_response = requests.get(cover_image_url, timeout=8)
-                    if img_response.status_code == 200:
-                        # Generate a safe filename
+                    img_response = requests.get(
+                        cover_image_url,
+                        timeout=20,
+                        headers={"User-Agent": "Aletheia/1.0 (personal library app)"}
+                    )
+                    if img_response.status_code == 200 and len(img_response.content) > 1000:
                         safe_title = title[:30].replace(' ', '_').replace('/', '-')
                         filename = f"cover_{safe_title}.jpg"
                         cover_file = ContentFile(img_response.content, name=filename)
                         book.cover_image.save(filename, cover_file, save=True)
-                except requests.RequestException:
+                except Exception:
                     pass  # Silently fall back to no cover
 
         # Link the global Book to the specific User
