@@ -1,3 +1,4 @@
+import logging
 import requests
 from django.core.files.base import ContentFile
 from django.shortcuts import render
@@ -251,8 +252,11 @@ class AddBookView(APIView):
                         filename = f"cover_{safe_title}.jpg"
                         cover_file = ContentFile(img_response.content, name=filename)
                         book.cover_image.save(filename, cover_file, save=True)
-                except Exception:
-                    pass  # Silently fall back to no cover
+                except Exception as e:
+                    logging.getLogger(__name__).error(
+                        "Cover upload failed for '%s': %s: %s",
+                        title, type(e).__name__, e
+                    )
 
         # Link the global Book to the specific User
         userbook, created = Userbook.objects.get_or_create(

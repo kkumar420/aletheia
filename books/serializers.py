@@ -78,6 +78,10 @@ class UserbookSerializer(serializers.ModelSerializer):
             if url.startswith('http'):
                 return url
             return request.build_absolute_uri(url) if request else url
+        # Fallback: reconstruct cover URL from ISBN via OpenLibrary's public cover API.
+        # This handles the case where the Cloudinary upload failed but we have the ISBN.
+        if obj.book.isbn:
+            return f"https://covers.openlibrary.org/b/isbn/{obj.book.isbn}-M.jpg"
         return ""
 
     # Override the save behavior to intercept the tags
@@ -148,6 +152,10 @@ class UserBookDashboardSerializer(serializers.ModelSerializer):
             if url.startswith('http'):
                 return url
             return request.build_absolute_uri(url) if request else url
+        # Fallback: reconstruct cover URL from ISBN via OpenLibrary's public cover API.
+        # This handles the case where the Cloudinary upload failed but we have the ISBN.
+        if obj.book.isbn:
+            return f"https://covers.openlibrary.org/b/isbn/{obj.book.isbn}-M.jpg"
         return ""
 
 class RegisterSerializer(serializers.ModelSerializer):
