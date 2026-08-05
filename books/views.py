@@ -26,12 +26,14 @@ from .serializers import (
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
+    permission_classes = [IsAuthenticated]
     search_fields = ['name']
 
 
 class PublisherViewSet(viewsets.ModelViewSet):
     queryset = Publisher.objects.all()
     serializer_class = PublisherSerializer
+    permission_classes = [IsAuthenticated]
     search_fields = ['name']
 
 
@@ -39,6 +41,7 @@ class BookViewSet(viewsets.ModelViewSet):
     # OPTIMIZATION: prefetch authors and publisher to prevent N+1 queries 
     # when listing books in the global database.
     queryset = Book.objects.select_related('publisher').prefetch_related('authors')
+    permission_classes = [IsAuthenticated]
     search_fields = ['title', 'authors__name']
 
     def get_serializer_class(self):
@@ -272,17 +275,36 @@ class ManualAddBookView(APIView):
         if not title:
             return Response({"error": "Title is required"}, status=400)
 
-        # Create a minimal placeholder Book
-        book = Book.objects.create(title=title)
+        # Resolve or create the author first, so we can use them for deduplication
+        author_obj = None
         if author_name:
             author_obj, _ = Author.objects.get_or_create(name=author_name)
-            book.authors.add(author_obj)
 
-        # Create Userbook with custom overrides
-        userbook = Userbook.objects.create(
-            user=request.user, book=book, status='WANT',
-            custom_title=title, custom_author=author_name
+        # Avoid polluting the global Book table with duplicates.
+        # Match on (title, author) the same way AddBookView does.
+        book = None
+        if author_obj:
+            book = Book.objects.filter(title=title, authors=author_obj).first()
+
+        if not book:
+            book = Book.objects.create(title=title)
+            if author_obj:
+                book.authors.add(author_obj)
+
+        # Link the book to the user, or return early if already in their library
+        userbook, created = Userbook.objects.get_or_create(
+            user=request.user,
+            book=book,
+            defaults={
+                'status': 'WANT',
+                'custom_title': title,
+                'custom_author': author_name,
+            }
         )
+
+        if not created:
+            return Response({"detail": "This book is already in your library!"}, status=400)
+
         if cover:
             userbook.custom_cover.save(cover.name, cover, save=True)
 
