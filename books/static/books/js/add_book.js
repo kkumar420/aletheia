@@ -298,9 +298,10 @@ function renderResults(results, page) {
         const title = book.title || "Unknown Title";
         const author = book.author_name ? (Array.isArray(book.author_name) ? book.author_name[0] : book.author_name) : "Unknown Author";
         
-        // OpenLibrary returns isbn and publisher as arrays
-        const primaryIsbn = (book.isbn && book.isbn.length > 0) ? book.isbn[0] : null;
-        const primaryPublisher = (book.publisher && book.publisher.length > 0) ? book.publisher[0] : null;
+        // The backend's search view already extracts the first element of the arrays, 
+        // so these are already strings.
+        const primaryIsbn = book.isbn || null;
+        const primaryPublisher = book.publisher || null;
 
         // Priority requested: ISBN (lookup by ISBN) → cover_i (direct ID) → local placeholder.
         const isbnUrl = primaryIsbn ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-M.jpg?default=false` : "";
@@ -309,10 +310,12 @@ function renderResults(results, page) {
 
         const initialSrc = isbnUrl || coverIdUrl || placeholderUrl;
         
-        // Build the onerror chain
+        // Build the onerror chain. If the first image fails, we want to try the next one,
+        // and finally the placeholder.
         let onErrorChain = `this.onerror=null; this.src='${placeholderUrl}';`;
         if (isbnUrl && coverIdUrl) {
-            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${coverIdUrl}'; };`;
+            // When isbnUrl fails, set fallback onerror to placeholder, then switch src to coverIdUrl
+            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${coverIdUrl}';`;
         }
 
         const bookDataString = encodeURIComponent(JSON.stringify({
