@@ -298,9 +298,15 @@ function renderResults(results, page) {
         const title = book.title || "Unknown Title";
         const author = book.author_name || "Unknown Author";
         
-        const coverImage = book.cover_i 
-            ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` 
-            : "/static/books/images/book-placeholder.png";
+        // Priority: cover_i (direct ID) → ISBN (lookup by ISBN) → local placeholder.
+        // ?default=false tells OpenLibrary to return 404 instead of a tiny
+        // placeholder gif when no cover exists, so our onerror handler fires cleanly.
+        const coverImage = book.cover_i
+            ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`
+            : book.isbn
+                ? `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg?default=false`
+                : "/static/books/images/book-placeholder.png";
+
 
         const bookDataString = encodeURIComponent(JSON.stringify({
             title: title,
