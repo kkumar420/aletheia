@@ -303,27 +303,30 @@ function renderResults(results, page) {
         const primaryPublisher = (book.publisher && book.publisher.length > 0) ? book.publisher[0] : null;
 
         // Priority requested: ISBN (lookup by ISBN) → cover_i (direct ID) → local placeholder.
-        // ?default=false tells OpenLibrary to return 404 instead of a tiny
-        // placeholder gif when no cover exists, so our onerror handler fires cleanly.
-        const coverImage = primaryIsbn
-            ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-M.jpg?default=false`
-            : book.cover_i
-                ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`
-                : "/static/books/images/book-placeholder.png";
+        const isbnUrl = primaryIsbn ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-M.jpg?default=false` : "";
+        const coverIdUrl = book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : "";
+        const placeholderUrl = "/static/books/images/book-placeholder.png";
 
+        const initialSrc = isbnUrl || coverIdUrl || placeholderUrl;
+        
+        // Build the onerror chain
+        let onErrorChain = `this.onerror=null; this.src='${placeholderUrl}';`;
+        if (isbnUrl && coverIdUrl) {
+            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${coverIdUrl}'; };`;
+        }
 
         const bookDataString = encodeURIComponent(JSON.stringify({
             title: title,
             author: author,
-            cover_image: coverImage,
+            cover_i: book.cover_i || "",
             isbn: primaryIsbn || "",
             publisher: primaryPublisher || ""
         }));
 
         return `
             <div class="book-card flex" style="flex-direction: column;">
-                <img src="${coverImage}" class="book-cover" alt="Cover" style="margin-bottom: 15px;"
-                     onerror="this.onerror=null; this.src='/static/books/images/book-placeholder.png';">
+                <img src="${initialSrc}" class="book-cover" alt="Cover" style="margin-bottom: 15px;"
+                     onerror="${onErrorChain}">
                 <div class="book-info" style="flex: 1; display: flex; flex-direction: column;">
                     <div class="book-title mb-sm">${title}</div>
                     <div class="book-author mb-md">${author}</div>

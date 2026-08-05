@@ -216,6 +216,7 @@ class AddBookView(APIView):
         title = request.data.get('title')
         author_name = request.data.get('author')
         cover_image_url = request.data.get('cover_image', '')
+        cover_i = request.data.get('cover_i', '')
         publisher_name = request.data.get('publisher')
         isbn = request.data.get('isbn')
 
@@ -247,27 +248,35 @@ class AddBookView(APIView):
                 book.authors.add(author)
 
         # Download and cache the cover image to Cloudinary.
-        # Runs for BOTH new books AND pre-existing books that have no cover yet
-        # (e.g. books added when Cloudinary was misconfigured get backfilled here).
-        # Timeout is generous (20s) to handle slow OpenLibrary + Cloudinary chains.
-        # The broad except ensures any failure degrades gracefully.
-        if not book.cover_image and cover_image_url and 'openlibrary.org' in cover_image_url:
-            try:
-                img_response = requests.get(
-                    cover_image_url,
-                    timeout=20,
-                    headers={"User-Agent": "Aletheia/1.0 (personal library app)"}
-                )
-                if img_response.status_code == 200 and len(img_response.content) > 1000:
-                    safe_title = title[:30].replace(' ', '_').replace('/', '-')
-                    filename = f"cover_{safe_title}.jpg"
-                    cover_file = ContentFile(img_response.content, name=filename)
-                    book.cover_image.save(filename, cover_file, save=True)
-            except Exception as e:
-                logging.getLogger(__name__).error(
-                    "Cover upload failed for '%s': %s: %s",
-                    title, type(e).__name__, e
-                )
+        # Runs for BOTH new books AND pre-existing books that have no cover yet.
+        # Fallback chain matches frontend: ISBN -> cover_i -> frontend url
+        if not book.cover_image:
+            urls_to_try = []
+            if isbn:
+                urls_to_try.append(f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false")
+            if cover_i:
+                urls_to_try.append(f"https://covers.openlibrary.org/b/id/{cover_i}-M.jpg")
+            if cover_image_url and 'openlibrary.org' in cover_image_url and cover_image_url not in urls_to_try:
+                urls_to_try.append(cover_image_url)
+
+            for url in urls_to_try:
+                try:
+                    img_response = requests.get(
+                        url,
+                        timeout=20,
+                        headers={"User-Agent": "Aletheia/1.0 (personal library app)"}
+                    )
+                    if img_response.status_code == 200 and len(img_response.content) > 1000:
+                        safe_title = title[:30].replace(' ', '_').replace('/', '-')
+                        filename = f"cover_{safe_title}.jpg"
+                        cover_file = ContentFile(img_response.content, name=filename)
+                        book.cover_image.save(filename, cover_file, save=True)
+                        break  # Successfully downloaded, stop trying fallbacks
+                except Exception as e:
+                    logging.getLogger(__name__).warning(
+                        "Cover upload failed for '%s' at %s: %s: %s",
+                        title, url, type(e).__name__, e
+                    )
 
         # Link the global Book to the specific User
         userbook, created = Userbook.objects.get_or_create(
