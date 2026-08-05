@@ -1,6 +1,6 @@
 // --- Global Filter/Sorting States ---
 let allBooksData = [];
-let selectedStatus = "ALL";
+let selectedStatuses = new Set();
 let selectedTags = new Set();
 let currentView = localStorage.getItem("dashboardView") || "grid";
 let searchQuery = "";
@@ -459,10 +459,30 @@ function setupFiltersAndSortSuite() {
     const statusItems = document.querySelectorAll(".status-item");
     statusItems.forEach(item => {
         item.addEventListener("click", (e) => {
-            statusItems.forEach(btn => btn.classList.remove("active"));
-            e.target.classList.add("active");
+            const status = e.target.getAttribute("data-status");
             
-            selectedStatus = e.target.getAttribute("data-status");
+            if (status === "ALL") {
+                selectedStatuses.clear();
+                statusItems.forEach(btn => btn.classList.remove("active"));
+                e.target.classList.add("active");
+            } else {
+                // If "ALL" was previously active, un-active it
+                document.querySelector('.status-item[data-status="ALL"]').classList.remove("active");
+                
+                if (selectedStatuses.has(status)) {
+                    selectedStatuses.delete(status);
+                    e.target.classList.remove("active");
+                } else {
+                    selectedStatuses.add(status);
+                    e.target.classList.add("active");
+                }
+                
+                // If nothing is selected, revert to ALL
+                if (selectedStatuses.size === 0) {
+                    document.querySelector('.status-item[data-status="ALL"]').classList.add("active");
+                }
+            }
+            
             applyFiltersAndSorts();
         });
     });
@@ -471,7 +491,7 @@ function setupFiltersAndSortSuite() {
 // --- Unified Filter/Sorter Pipeline ---
 function applyFiltersAndSorts() {
     let processedBooks = allBooksData.filter(book => {
-        const matchesStatus = (selectedStatus === "ALL" || book.status === selectedStatus);
+        const matchesStatus = (selectedStatuses.size === 0 || selectedStatuses.has(book.status));
         
         const bookTitle = book.title || "";
         const bookAuthor = book.author || "";

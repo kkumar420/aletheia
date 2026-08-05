@@ -69,8 +69,8 @@ class UserbookViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     
-    # Enable filtering by URL params like ?status=READ
-    filterset_fields = ['status', 'tags']
+    # Enable filtering by URL params
+    filterset_fields = ['tags']
     search_fields = ['effective_title', 'effective_author', 'book__authors__name', 'tags__name']
     ordering = ['-added_at']
 
@@ -81,9 +81,16 @@ class UserbookViewSet(viewsets.ModelViewSet):
         Coalesce(NullIf(custom_field, ''), fallback) treats blank strings
         as NULL so it correctly falls through to the Book-level data.
         """
-        return Userbook.objects.filter(
+        qs = Userbook.objects.filter(
             user=self.request.user
-        ).select_related(
+        )
+        
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            statuses = [s.strip() for s in status_param.split(',')]
+            qs = qs.filter(status__in=statuses)
+            
+        return qs.select_related(
             'book'
         ).prefetch_related(
             'book__authors', 
