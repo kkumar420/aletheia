@@ -249,13 +249,13 @@ class AddBookView(APIView):
 
         # Download and cache the cover image to Cloudinary.
         # Runs for BOTH new books AND pre-existing books that have no cover yet.
-        # Fallback chain matches frontend: ISBN -> cover_i -> frontend url
+        # Fallback chain matches frontend: cover_i -> ISBN -> frontend url
         if not book.cover_image:
             urls_to_try = []
+            if cover_i:
+                urls_to_try.append(f"https://covers.openlibrary.org/b/id/{cover_i}-M.jpg?default=false")
             if isbn:
                 urls_to_try.append(f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false")
-            if cover_i:
-                urls_to_try.append(f"https://covers.openlibrary.org/b/id/{cover_i}-M.jpg")
             if cover_image_url and 'openlibrary.org' in cover_image_url and cover_image_url not in urls_to_try:
                 urls_to_try.append(cover_image_url)
 

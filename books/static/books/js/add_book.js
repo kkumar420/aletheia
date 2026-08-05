@@ -303,19 +303,20 @@ function renderResults(results, page) {
         const primaryIsbn = book.isbn || null;
         const primaryPublisher = book.publisher || null;
 
-        // Priority requested: ISBN (lookup by ISBN) → cover_i (direct ID) → local placeholder.
+        // Priority requested: cover_i (direct ID) → ISBN (lookup by ISBN) → local placeholder.
+        // We add ?default=false to both so they return 404 instead of a blank 1x1 pixel if missing.
+        const coverIdUrl = book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg?default=false` : "";
         const isbnUrl = primaryIsbn ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-M.jpg?default=false` : "";
-        const coverIdUrl = book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : "";
         const placeholderUrl = "/static/books/images/book-placeholder.png";
 
-        const initialSrc = isbnUrl || coverIdUrl || placeholderUrl;
+        const initialSrc = coverIdUrl || isbnUrl || placeholderUrl;
         
         // Build the onerror chain. If the first image fails, we want to try the next one,
         // and finally the placeholder.
         let onErrorChain = `this.onerror=null; this.src='${placeholderUrl}';`;
-        if (isbnUrl && coverIdUrl) {
-            // When isbnUrl fails, set fallback onerror to placeholder, then switch src to coverIdUrl
-            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${coverIdUrl}';`;
+        if (coverIdUrl && isbnUrl) {
+            // When coverIdUrl fails, set fallback onerror to placeholder, then switch src to isbnUrl
+            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${isbnUrl}';`;
         }
 
         const bookDataString = encodeURIComponent(JSON.stringify({
