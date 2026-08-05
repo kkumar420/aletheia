@@ -45,9 +45,9 @@ Aletheia provides a deeply integrated suite of tools designed to curate and mani
 - **`localStorage` Persistence:** View types, sort properties (Date Added, Rating, Start Date, Title), and sort directions are instantly cached to the browser. Navigating away and returning to the dashboard instantly restores the exact visual state without any loading flicker.
 
 ### 4. Advanced Categorization & State Tracking
-- **Reading Status Engine:** Tracks a book's life cycle through strict statuses: *Want to Read*, *Reading*, *Finished*, and *Did Not Finish (DNF)*.
+- **Reading Status Engine:** Tracks a book's life cycle through strict statuses: *Want to Read*, *Reading*, *Finished*, and *Did Not Finish (DNF)*. Users can dynamically toggle and filter multiple statuses concurrently (e.g. view both 'Reading' and 'Want to Read' simultaneously).
 - **Custom Tagging Topology:** Users can generate infinite custom tags to map thematic connections between texts.
-- **Additive Filtering:** Selecting a tag on a book card dynamically injects it into an active filter Set, allowing users to drill down into their library using a combination of text-search and multi-tag parameters instantly on the client side.
+- **Additive Filtering:** Selecting a tag on a book card dynamically injects it into an active filter Set, allowing users to drill down into their library using a combination of text-search, multi-status, and multi-tag parameters instantly on the client side.
 
 ### 5. Utility & Library Management
 - **Bulk Action Capabilities:** Checkbox-driven DOM nodes allow users to select multiple books simultaneously and issue a singular bulk-delete payload to the REST API, minimizing network requests.
