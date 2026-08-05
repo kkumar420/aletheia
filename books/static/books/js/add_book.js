@@ -309,23 +309,40 @@ function renderResults(results, page) {
         const isbnUrl = primaryIsbn ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-M.jpg?default=false` : "";
         const placeholderUrl = "/static/books/images/book-placeholder.png";
 
-        // Ultimate Priority: Local DB Cover → cover_i (direct ID) → ISBN (lookup by ISBN) → placeholder.
         const localCoverUrl = book.local_cover || "";
-        const initialSrc = localCoverUrl || coverIdUrl || isbnUrl || placeholderUrl;
         
-        // Build the onerror chain. If the first image fails, we want to try the next one,
-        // and finally the placeholder.
-        let onErrorChain = `this.onerror=null; this.src='${placeholderUrl}';`;
+        // We will try loading these in order. 
+        // 1. Cloudinary Cover (if we already have it)
+        // 2. Direct OpenLibrary cover_i
+        // 3. Direct OpenLibrary ISBN
+        // 4. Proxied OpenLibrary (bypasses browser SSL/Adblock issues)
+        // 5. Placeholder
         
-        if (localCoverUrl && coverIdUrl && isbnUrl) {
-            onErrorChain = `this.onerror=function(){ this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${isbnUrl}'; }; this.src='${coverIdUrl}';`;
-        } else if (localCoverUrl && coverIdUrl) {
-            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${coverIdUrl}';`;
-        } else if (localCoverUrl && isbnUrl) {
-            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${isbnUrl}';`;
-        } else if (coverIdUrl && isbnUrl) {
-            onErrorChain = `this.onerror=function(){ this.onerror=null; this.src='${placeholderUrl}'; }; this.src='${isbnUrl}';`;
-        }
+        const fallbacks = [];
+        if (localCoverUrl) fallbacks.push(localCoverUrl);
+        if (coverIdUrl) fallbacks.push(coverIdUrl);
+        if (isbnUrl) fallbacks.push(isbnUrl);
+        
+        const proxyUrl = (book.cover_i || primaryIsbn) ? `/proxy-cover/?${book.cover_i ? 'cover_i=' + book.cover_i : 'isbn=' + primaryIsbn}` : "";
+        if (proxyUrl) fallbacks.push(proxyUrl);
+        fallbacks.push(placeholderUrl);
+        
+        // Remove duplicates and empty strings
+        const uniqueFallbacks = [...new Set(fallbacks)].filter(Boolean);
+        const initialSrc = uniqueFallbacks[0];
+        
+        // Create a robust onerror chain that shifts the next url from an array
+        // We inject the array as a string literal.
+        const fallbacksJson = JSON.stringify(uniqueFallbacks.slice(1));
+        const onErrorChain = `
+            if (!this.fallbackIdx) this.fallbackIdx = 0;
+            const fb = ${fallbacksJson};
+            if (this.fallbackIdx < fb.length) {
+                this.src = fb[this.fallbackIdx++];
+            } else {
+                this.onerror = null;
+            }
+        `.replace(/\n/g, ' ');
 
         const bookDataString = encodeURIComponent(JSON.stringify({
             title: title,

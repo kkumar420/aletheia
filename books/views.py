@@ -219,7 +219,39 @@ class OpenLibrarySearchView(APIView):
             })
 
         return Response(results)
-    
+
+class ProxyCoverView(APIView):
+    """
+    Proxies cover images through the backend to bypass browser-specific network 
+    issues (e.g. SSL EOF errors when archive.org redirects fail in browsers).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.http import HttpResponse
+        import requests
+        
+        cover_i = request.GET.get('cover_i')
+        isbn = request.GET.get('isbn')
+        url = None
+        
+        if cover_i:
+            url = f"https://covers.openlibrary.org/b/id/{cover_i}-M.jpg?default=false"
+        elif isbn:
+            url = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false"
+            
+        if not url:
+            return HttpResponse(status=400)
+            
+        try:
+            r = requests.get(url, timeout=5, allow_redirects=True)
+            if r.status_code == 200 and len(r.content) > 1000:
+                return HttpResponse(r.content, content_type=r.headers.get('Content-Type', 'image/jpeg'))
+        except Exception:
+            pass
+            
+        return HttpResponse(status=404)
+        
 
 class AddBookView(APIView):
     """

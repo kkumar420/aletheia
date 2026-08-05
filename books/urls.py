@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import AuthorViewSet, PublisherViewSet, BookViewSet, UserbookViewSet, RegisterView, OpenLibrarySearchView, AddBookView, ManualAddBookView, BulkDeleteView, TagViewSet, login_page, dashboard, book_info_page, add_book_page, settings_page, register_page
+from .views import AuthorViewSet, PublisherViewSet, BookViewSet, UserbookViewSet, RegisterView, OpenLibrarySearchView, AddBookView, ManualAddBookView, BulkDeleteView, TagViewSet, ProxyCoverView, login_page, dashboard, book_info_page, add_book_page, settings_page, register_page
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -15,6 +15,7 @@ urlpatterns = [
     path('register/', RegisterView.as_view()),
     path('search-openlibrary/', OpenLibrarySearchView.as_view()),
     path('add-book/', AddBookView.as_view()),
+    path('proxy-cover/', ProxyCoverView.as_view()),
     path('', dashboard, name='dashboard'),
     path('login-page/', login_page, name='login_page'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
